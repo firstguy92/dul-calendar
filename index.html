@@ -42,6 +42,19 @@
   --warn:#F0B26B;--warn-soft:#3A2A17;--ok:#7FD1A6;--ok-soft:#1A3326;
   --btn:#F2F2F4;--btn-ink:#121214;color-scheme:dark;
 }
+
+/* color themes */
+:root[data-palette="rose"]{--bg:#FAF6F7;--surface2:#F4EEF0;--line:#F0E8EB;--period:#E0567D;--period-soft:#FBE2EA;--period-soft-ink:#B42F58;--point:#3F6FB5;--point-soft:#E5EDF8}
+:root[data-palette="lavender"]{--bg:#F6F5FA;--surface2:#EFEDF6;--line:#EAE7F2;--period:#D2649A;--period-soft:#F9E3EE;--period-soft-ink:#A83D73;--point:#7A5CD6;--point-soft:#EEE9FB}
+:root[data-palette="ocean"]{--bg:#F4F7F9;--surface2:#EDF1F4;--line:#E5EBEF;--period:#E8705A;--period-soft:#FCE5DF;--period-soft-ink:#BD4A33;--point:#2F7FD0;--point-soft:#E3EEFA}
+@media (prefers-color-scheme:dark){
+  :root[data-palette="rose"]:not([data-theme="light"]){--bg:#141113;--surface:#1E1A1C;--surface2:#2A2427;--line:#322B2E;--period:#EE6F95;--period-soft:#43212C;--period-soft-ink:#F5A6BE;--point:#93B4E8;--point-soft:#1F2B3D}
+  :root[data-palette="lavender"]:not([data-theme="light"]){--bg:#131219;--surface:#1C1B24;--surface2:#282633;--line:#2E2C3A;--period:#E57DAF;--period-soft:#40213A;--period-soft-ink:#F2A9CB;--point:#B6A2F2;--point-soft:#2B2645}
+  :root[data-palette="ocean"]:not([data-theme="light"]){--bg:#10141A;--surface:#19202A;--surface2:#232C38;--line:#2A3441;--period:#F0846E;--period-soft:#3D2520;--period-soft-ink:#F7AE9E;--point:#7DB4F0;--point-soft:#1C2C40}
+}
+:root[data-palette="rose"][data-theme="dark"]{--bg:#141113;--surface:#1E1A1C;--surface2:#2A2427;--line:#322B2E;--period:#EE6F95;--period-soft:#43212C;--period-soft-ink:#F5A6BE;--point:#93B4E8;--point-soft:#1F2B3D}
+:root[data-palette="lavender"][data-theme="dark"]{--bg:#131219;--surface:#1C1B24;--surface2:#282633;--line:#2E2C3A;--period:#E57DAF;--period-soft:#40213A;--period-soft-ink:#F2A9CB;--point:#B6A2F2;--point-soft:#2B2645}
+:root[data-palette="ocean"][data-theme="dark"]{--bg:#10141A;--surface:#19202A;--surface2:#232C38;--line:#2A3441;--period:#F0846E;--period-soft:#3D2520;--period-soft-ink:#F7AE9E;--point:#7DB4F0;--point-soft:#1C2C40}
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none!important}
@@ -53,20 +66,20 @@ button{font:inherit;color:inherit;cursor:pointer;letter-spacing:inherit}
 button:focus-visible,input:focus-visible,textarea:focus-visible{outline:2px solid var(--point);outline-offset:2px}
 .wrap{max-width:520px;margin:0 auto;padding:0 16px 112px}
 header.top{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);display:flex;align-items:center;gap:10px;padding:14px 16px 12px;max-width:520px;margin:0 auto}
-header.top h1{margin:0;font-size:22px;font-weight:800;flex:1;letter-spacing:-.02em}
+header.top h1{margin:0;font-size:24px;font-weight:800;flex:1;letter-spacing:-.03em}
 .seg{display:flex;background:var(--surface2);border-radius:999px;padding:3px}
 .seg button{border:0;background:transparent;padding:6px 12px;border-radius:999px;font-size:14px;color:var(--muted);max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.08)}
-.iconbtn{border:0;background:transparent;width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
+.iconbtn{border:0;background:transparent;color:var(--muted);width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex:none}
 .iconbtn svg{width:22px;height:22px}
 
 /* cards & text */
-.card{background:var(--surface);border-radius:22px;padding:20px;margin-bottom:12px}
+.card{background:var(--surface);border-radius:20px;padding:20px;margin-bottom:12px}
 .card h3{margin:0 0 4px;font-size:18px;font-weight:700;line-height:1.35}
 .card .sub{margin:0 0 14px;color:var(--muted);font-size:14.5px}
 .headline{margin:0 0 6px;font-size:22px;font-weight:800;line-height:1.38;letter-spacing:-.02em}
 .headline.sm{font-size:19px}
-.sechead{display:flex;align-items:baseline;justify-content:space-between;margin:22px 4px 10px}
+.sechead{display:flex;align-items:baseline;justify-content:space-between;margin:26px 4px 12px}
 .sechead h3{margin:0;font-size:19px;font-weight:800}
 .link{border:0;background:transparent;color:var(--muted);font-size:14.5px;padding:4px 0}
 .empty{margin:4px 0 0;color:var(--muted);font-size:14.5px}
@@ -91,26 +104,26 @@ header.top h1{margin:0;font-size:22px;font-weight:800;flex:1;letter-spacing:-.02
 .dbox{flex:none;width:46px;height:46px;border-radius:13px;background:var(--btn);color:var(--btn-ink);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;font-variant-numeric:tabular-nums}
 .sthead .big{display:block;font-size:24px;font-weight:800;letter-spacing:-.025em;line-height:1.25}
 .sthead .small{display:block;font-size:14px;color:var(--muted);margin-top:2px}
-.cbar{margin:20px 0 4px}
-.track{position:relative;height:10px;border-radius:5px;background:var(--surface2)}
+.cbar{margin:22px 0 0}
+.track{position:relative;height:8px;border-radius:4px;background:var(--surface2)}
 .track .seg{position:absolute;top:0;bottom:0;border-radius:5px}
 .track .seg.p{background:var(--period)}
 .track .seg.f{background:var(--fertile)}
 .track .seg.o{background:var(--ov)}
-.track .now{position:absolute;top:50%;width:18px;height:18px;margin:-9px 0 0 -9px;border-radius:50%;background:var(--surface);border:4px solid var(--btn)}
+.track .now{position:absolute;top:50%;width:16px;height:16px;margin:-8px 0 0 -8px;border-radius:50%;background:var(--surface);border:4px solid var(--btn)}
 .cbl{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-top:8px}
-.wstrip{display:grid;grid-template-columns:repeat(7,1fr);margin-top:18px;border-top:1px solid var(--line);padding-top:14px}
+.wstrip{display:grid;grid-template-columns:repeat(7,1fr);margin-top:20px}
 .wd{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:5px;padding:0}
 .wd .w{font-size:12.5px;color:var(--muted)}
 .wd .num{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:16px;font-variant-numeric:tabular-nums}
 .wd.today .num{background:var(--btn);color:var(--btn-ink);font-weight:700}
 .wd .ln{height:4px;width:60%;border-radius:2px}
 .ln.period{background:var(--period)}.ln.pred{background:var(--period-soft)}.ln.fertile{background:var(--fertile)}.ln.ov{background:var(--ov)}
-.pills{display:flex;gap:8px;overflow-x:auto;padding:0 4px 4px;margin:0 -4px 12px;scrollbar-width:none}
+.pills{display:flex;gap:8px;overflow-x:auto;padding:0 4px 4px;margin:0 -4px 10px;scrollbar-width:none}
 .pills::-webkit-scrollbar{display:none}
 .pill{flex:none;border:0;background:var(--surface);border-radius:999px;padding:10px 15px;font-size:14.5px;font-weight:600;display:flex;align-items:center;gap:6px}
 .pill span{width:18px;height:18px;border-radius:50%;background:var(--surface2);color:var(--muted);display:inline-flex;align-items:center;justify-content:center;font-size:14px;line-height:1}
-.pill.main{background:var(--surface);box-shadow:inset 0 0 0 1.5px var(--ink)}
+.pill.main{background:var(--btn);color:var(--btn-ink)}
 .recs{display:grid;gap:14px}
 .rec{display:flex;gap:12px;align-items:flex-start}
 .rdot{flex:none;width:10px;height:10px;border-radius:50%;margin-top:7px}
@@ -186,12 +199,23 @@ textarea{resize:vertical;min-height:84px;font-size:14.5px;word-break:break-all}
 ol.how{margin:0;padding-left:20px;font-size:14.5px}
 ol.how li{margin-bottom:6px}
 
+/* appearance settings */
+.modeseg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface2);border-radius:12px;padding:3px;margin-bottom:18px}
+.modeseg button{border:0;background:transparent;border-radius:10px;padding:9px 0;font-size:14.5px;color:var(--muted)}
+.modeseg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:700;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.swatches{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.sw{border:0;background:transparent;display:flex;flex-direction:column;align-items:center;gap:7px;padding:0;font-size:13px;color:var(--muted)}
+.sw .dot{width:46px;height:46px;border-radius:50%;display:flex;align-items:center;justify-content:center;box-shadow:inset 0 0 0 1px rgba(0,0,0,.06)}
+.sw .dot i{width:24px;height:24px;border-radius:50%}
+.sw[aria-pressed="true"]{color:var(--ink);font-weight:700}
+.sw[aria-pressed="true"] .dot{box-shadow:0 0 0 2px var(--surface),0 0 0 4px var(--ink)}
+
 /* nav */
-nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+nav.tabs{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);box-shadow:0 -1px 0 var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
 nav.tabs .in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(4,1fr)}
-nav.tabs button{border:0;background:transparent;padding:8px 0 10px;font-size:12px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:3px}
+nav.tabs button{border:0;background:transparent;padding:9px 0 10px;font-size:11.5px;color:var(--muted);display:flex;flex-direction:column;align-items:center;gap:4px;opacity:.75}
 nav.tabs svg{width:23px;height:23px}
-nav.tabs button[aria-current="page"]{color:var(--ink);font-weight:700}
+nav.tabs button[aria-current="page"]{color:var(--ink);font-weight:700;opacity:1}
 
 /* sheet */
 .scrim{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:30;opacity:0;pointer-events:none;transition:opacity .2s}
@@ -258,7 +282,7 @@ const md=s=>{const d=parse(s);return (d.getMonth()+1)+'월 '+d.getDate()+'일'};
 const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
 // ---------- storage (this device only) ----------
-const blank=()=>({days:[],logs:{},settings:{cycleLen:28,periodLen:5,name:''},partner:null,sync:null});
+const blank=()=>({days:[],logs:{},settings:{cycleLen:28,periodLen:5,name:'',mode:'system',theme:'coral'},partner:null,sync:null});
 function load(){
   try{const r=localStorage.getItem(KEY);if(!r)return blank();const d=JSON.parse(r);const b=blank();
     return {days:Array.isArray(d.days)?d.days:[],logs:d.logs||{},settings:Object.assign(b.settings,d.settings||{}),partner:d.partner||null,sync:d.sync&&typeof d.sync.secret==='string'?d.sync:null};
@@ -350,6 +374,13 @@ function renderWho(){
   w.hidden=false;
   w.innerHTML='<button data-who="me" aria-pressed="'+(viewing==='me')+'">'+esc(data.settings.name||'나')+'</button><button data-who="partner" aria-pressed="'+(viewing==='partner')+'">'+esc(data.partner.name||'연인')+'</button>';
 }
+const THEMES=[['coral','기본','#F6F6F4','#EE6A44','#6A4FA0'],['rose','로즈','#FAF6F7','#E0567D','#3F6FB5'],['lavender','라벤더','#F6F5FA','#D2649A','#7A5CD6'],['ocean','오션','#F4F7F9','#E8705A','#2F7FD0']];
+function applyTheme(){
+  const r=document.documentElement,st=data.settings;
+  if(st.mode==='light'||st.mode==='dark')r.setAttribute('data-theme',st.mode);else r.removeAttribute('data-theme');
+  if(st.theme&&st.theme!=='coral')r.setAttribute('data-palette',st.theme);else r.removeAttribute('data-palette');
+  const m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',getComputedStyle(document.body).backgroundColor);
+}
 function render(){
   renderWho();
   const td=parse(TODAY);
@@ -362,7 +393,7 @@ function render(){
 function statusText(a){
   const k=phaseKey(a);
   if(!a.last)return {big:'첫 생리일을 기록해 보세요',small:'기록하면 다음 생리와 가임기를 예측해요'};
-  const sub=PHASE[k].short+' · 주기 '+a.cycleDay+'일째';
+  const sub=PHASE[k].short;
   if(k==='period'){const g=a.periods.find(g=>g.days.includes(TODAY))||a.last;return {big:'생리 '+(diff(g.start,TODAY)+1)+'일째',small:sub}}
   if(a.late>0)return {big:'예정일보다 '+a.late+'일 늦어요',small:'예정일 '+md(a.next)};
   const dn=diff(TODAY,a.next);
@@ -380,7 +411,7 @@ function cycleBar(a){
   const L=Math.max(a.avgCycle,a.cycleDay),ov=a.avgCycle-14,pct=v=>(Math.max(0,v)/L*100).toFixed(2)+'%';
   return '<div class="cbar"><div class="track"><span class="seg p" style="left:0;width:'+pct(Math.min(a.last.len,L))+'"></span>'+
     (ov>6?'<span class="seg f" style="left:'+pct(ov-6)+';width:'+pct(7)+'"></span><span class="seg o" style="left:'+pct(ov-1)+';width:'+pct(1)+'"></span>':'')+
-    '<span class="now" style="left:'+pct(Math.min(a.cycleDay,L)-.5)+'"></span></div><div class="cbl"><span>1일</span><span>배란 예정 '+md(a.ov)+'</span><span>'+L+'일</span></div></div>';
+    '<span class="now" style="left:'+pct(Math.min(a.cycleDay,L)-.5)+'"></span></div><div class="cbl"><span>주기 '+a.cycleDay+'일째</span><span>배란 예정 '+md(a.ov)+'</span></div></div>';
 }
 function recList(lg,empty){
   lg=lg||{};const r=[];
@@ -408,13 +439,13 @@ function renderHome(){
   if(!p.readonly){const inP=p.days.includes(TODAY);
     h+='<div class="row2"><button class="btn'+(inP?'':' tint')+'" data-q="'+(inP?'end':'start')+'">'+(inP?'생리 끝 기록':'생리 시작 기록')+'</button><button class="btn ghost" data-q="tocal">달력으로 보기</button></div>'}
   h+='</div>';
-  h+='<div class="sechead"><h3>오늘 기록</h3>'+(p.readonly?'':'<button class="link" data-q="log">기록 수정</button>')+'</div>';
-  if(!p.readonly)h+='<div class="pills"><button class="pill main" data-q="log">✎ 기록 추가</button>'+['생리 양','통증','기분','증상','메모'].map(x=>'<button class="pill" data-q="log"><span>+</span>'+x+'</button>').join('')+'</div>';
-  h+='<div class="card">'+recList(p.logs[TODAY],p.readonly?'오늘 공유된 기록이 없어요':'오늘 남긴 기록이 없어요')+'</div>';
+  const tl=p.logs[TODAY];
+  h+='<div class="sechead"><h3>오늘 기록</h3></div>';
+  if(!p.readonly)h+='<div class="pills"><button class="pill main" data-q="log">'+(tl?'기록 수정':'기록 추가')+'</button>'+['생리 양','통증','기분','증상','메모'].map(x=>'<button class="pill" data-q="log"><span>+</span>'+x+'</button>').join('')+'</div>';
+  if(tl||p.readonly)h+='<div class="card">'+recList(tl,'오늘 공유된 기록이 없어요')+'</div>';
   const tk=k==='ov'?'ov':k,tips=TIPS[tk][p.readonly?'partner':'me'];
-  h+='<div class="card" style="margin-top:20px"><h3>'+esc(TITLE[tk][p.readonly?1:0].replace('{n}',p.name))+'</h3><p class="sub">'+esc(PHASE[k].short)+'에 알아 두면 좋은 것</p>'+
-    tips.map(t=>'<div class="tip"><span class="em">'+t[0]+'</span><span>'+esc(t[1])+'</span></div>').join('')+'</div>';
-  h+='<p class="note">배란일과 가임기는 평균 주기로 계산한 추정치라 피임 수단으로 쓰기에는 정확하지 않아요.</p>';
+  h+='<div class="sechead"><h3>'+esc(TITLE[tk][p.readonly?1:0].replace('{n}',p.name))+'</h3></div><div class="card">'+
+    tips.slice(0,2).map(t=>'<div class="tip"><span class="em">'+t[0]+'</span><span>'+esc(t[1])+'</span></div>').join('')+'</div>';
   view.innerHTML=h;
 }
 function logTags(lg){
@@ -462,7 +493,7 @@ function renderCal(){
   view.innerHTML=(p.readonly?partnerNotice(a,p.name):'')+
     '<div class="monthbar"><b>'+y+'년 '+(m+1)+'월</b><div class="navbtns"><button data-nav="-1" aria-label="이전 달">‹</button><button data-nav="0">오늘</button><button data-nav="1" aria-label="다음 달">›</button></div></div>'+
     '<div class="cal"><div class="wkh">'+WD.map(w=>'<span>'+w+'</span>').join('')+'</div>'+rows+'</div>'+panel+
-    '<p class="hint">배란일과 가임기는 추정치예요.</p>';
+    '<p class="note">배란일과 가임기는 평균 주기로 계산한 추정치라 피임 수단으로 쓰기에는 정확하지 않아요.</p>';
 }
 
 // ---------- day sheet ----------
@@ -726,7 +757,11 @@ function renderManual(){
 
 // ---------- settings ----------
 function renderSettings(){
-  view.innerHTML='<div class="card"><h3 class="serif">기본값</h3><p class="sub">기록이 2번 미만일 때 예측에 쓰여요. 기록이 쌓이면 실제 평균으로 바뀌어요.</p>'+
+  const st=data.settings,mode=st.mode||'system',th=st.theme||'coral';
+  const look='<div class="card"><h3>화면</h3><p class="sub">이 폰에만 적용돼요</p>'+
+    '<div class="modeseg">'+[['system','시스템'],['light','밝게'],['dark','어둡게']].map(m=>'<button data-mode="'+m[0]+'" aria-pressed="'+(mode===m[0])+'">'+m[1]+'</button>').join('')+'</div>'+
+    '<div class="swatches">'+THEMES.map(t=>'<button class="sw" data-theme-pick="'+t[0]+'" aria-pressed="'+(th===t[0])+'"><span class="dot" style="background:'+t[2]+'"><i style="background:linear-gradient(90deg,'+t[3]+' 50%,'+t[4]+' 50%)"></i></span>'+t[1]+'</button>').join('')+'</div></div>';
+  view.innerHTML=look+'<div class="card"><h3 class="serif">기본값</h3><p class="sub">기록이 2번 미만일 때 예측에 쓰여요. 기록이 쌓이면 실제 평균으로 바뀌어요.</p>'+
     '<div class="row"><div class="field" style="flex:1"><label class="f" for="cl">주기 길이(일)</label><input type="number" id="cl" min="15" max="60" inputmode="numeric" value="'+data.settings.cycleLen+'"></div>'+
     '<div class="field" style="flex:1"><label class="f" for="pl">생리 기간(일)</label><input type="number" id="pl" min="1" max="14" inputmode="numeric" value="'+data.settings.periodLen+'"></div></div>'+
     '<button class="btn full" data-c="saveset">저장</button></div>'+
@@ -750,6 +785,8 @@ view.addEventListener('click',e=>{
     if(b.dataset.q==='tocal'){tab='cal';selDate=TODAY;const x=new Date();cursor=new Date(x.getFullYear(),x.getMonth(),1);render();window.scrollTo(0,0);return}
     render();return;
   }
+  if(b.dataset.mode){data.settings.mode=b.dataset.mode;saveLocal();applyTheme();render();return}
+  if(b.dataset.themePick){data.settings.theme=b.dataset.themePick;saveLocal();applyTheme();render();return}
   if(b.dataset.nav!==undefined){const n=+b.dataset.nav;if(n===0){const d=new Date();cursor=new Date(d.getFullYear(),d.getMonth(),1)}else cursor=new Date(cursor.getFullYear(),cursor.getMonth()+n,1);render();return}
   const c=b.dataset.c;if(!c)return;
   if(c==='pair-new'){
@@ -789,7 +826,7 @@ view.addEventListener('click',e=>{
   if(c==='restore'){
     try{const {kind,o}=readCode($('#rcode').value);if(kind!=='DULB1'){toast('백업 코드가 아니에요. 연인의 공유 코드는 연결 탭에 넣어 주세요.');return}
       if(!confirm('지금 이 휴대폰의 내 기록을 백업 내용으로 바꿀까요?'))return;
-      data.days=cleanDays(o.days);data.logs=cleanLogs(o.logs);data.settings=cleanSettings(o.settings);save();toast('백업을 복원했어요');render();
+      data.days=cleanDays(o.days);data.logs=cleanLogs(o.logs);data.settings=Object.assign({mode:data.settings.mode,theme:data.settings.theme},cleanSettings(o.settings));save();toast('백업을 복원했어요');render();
     }catch(err){toast(err.message)}
   }
   if(c==='wipe'){if(confirm('이 폰의 내 기록, 연인 정보, 연결을 모두 지울까요? 되돌릴 수 없어요.')){data=blank();keys=null;viewing='me';lastShare='';save();toast('모두 지웠어요');render()}}
@@ -798,6 +835,8 @@ document.querySelector('nav.tabs').addEventListener('click',e=>{const b=e.target
 $('#gear').addEventListener('click',()=>{tab='settings';render();window.scrollTo(0,0)});
 $('#who').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;viewing=b.dataset.who;render()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sheetDate)closeSheet()});
+applyTheme();
+if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
 render();
 syncInit();
 if('serviceWorker' in navigator&&location.protocol==='https:')navigator.serviceWorker.register('sw.js').catch(()=>{});
