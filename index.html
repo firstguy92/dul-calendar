@@ -8,7 +8,8 @@
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="둘의 달력">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<link rel="manifest" href="manifest.json">
+<link rel="manifest" id="mf" href="manifest.json">
+<script>try{var _t=(JSON.parse(localStorage.getItem('dul-cycle:v1')||'{}').settings||{}).theme;if(_t&&_t!=='coral')document.getElementById('mf').href='manifest-'+_t+'.json'}catch(e){}</script>
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
 <title>둘의 달력</title>
@@ -392,6 +393,7 @@ function applyTheme(){
   const r=document.documentElement,st=data.settings;
   if(st.mode==='light'||st.mode==='dark')r.setAttribute('data-theme',st.mode);else r.removeAttribute('data-theme');
   if(st.theme&&st.theme!=='coral')r.setAttribute('data-palette',st.theme);else r.removeAttribute('data-palette');
+  const mf=document.getElementById('mf');if(mf){const h=(st.theme&&st.theme!=='coral')?'manifest-'+st.theme+'.json':'manifest.json';if(mf.getAttribute('href')!==h)mf.setAttribute('href',h)}
   const m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',getComputedStyle(document.body).backgroundColor);
 }
 function render(){
@@ -511,7 +513,10 @@ function renderCal(){
 
 // ---------- day sheet ----------
 let sheetDate=null;
-let ignorePop=false;
+let ignorePop=false,installEvt=null;
+const isStandalone=()=>window.matchMedia('(display-mode: standalone)').matches||window.matchMedia('(display-mode: fullscreen)').matches||navigator.standalone===true;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();installEvt=e;if(tab==='settings')render()});
+window.addEventListener('appinstalled',()=>{installEvt=null;toast('앱으로 설치했어요. 홈 화면의 아이콘으로 열어 주세요.');if(tab==='settings')render()});
 function openSheet(d){const was=!!sheetDate;sheetDate=d;drawSheet();const sh=$('#sheet');sh.style.transform='';sh.scrollTop=0;$('#scrim').classList.add('on');sh.classList.add('on');if(!was)history.pushState({dul:'sheet'},'')}
 function closeSheet(fromPop){if(!sheetDate)return;const n=$('#note');if(n&&!profile().readonly)logSet(sheetDate,'note',n.value);sheetDate=null;$('#sheet').style.transform='translateY(105%)';
   if(fromPop!==true&&history.state&&history.state.dul==='sheet'){ignorePop=true;history.back()}$('#scrim').classList.remove('on');$('#sheet').classList.remove('on');render()}
@@ -775,8 +780,10 @@ function renderSettings(){
   const st=data.settings,mode=st.mode||'system',th=st.theme||'coral';
   const look='<div class="card"><h3>화면</h3><p class="sub">이 폰에만 적용돼요</p>'+
     '<div class="modeseg">'+[['system','시스템'],['light','밝게'],['dark','어둡게']].map(m=>'<button data-mode="'+m[0]+'" aria-pressed="'+(mode===m[0])+'">'+m[1]+'</button>').join('')+'</div>'+
-    '<div class="swatches">'+THEMES.map(t=>'<button class="sw" data-theme-pick="'+t[0]+'" aria-pressed="'+(th===t[0])+'"><span class="dot" style="background:'+t[2]+'"><i style="background:linear-gradient(90deg,'+t[3]+' 50%,'+t[4]+' 50%)"></i></span>'+t[1]+'</button>').join('')+'</div></div>';
-  view.innerHTML=look+'<div class="card"><h3 class="serif">기본값</h3><p class="sub">기록이 2번 미만일 때 예측에 쓰여요. 기록이 쌓이면 실제 평균으로 바뀌어요.</p>'+
+    '<div class="swatches" style="margin-bottom:2px">'+THEMES.map(t=>'<button class="sw" data-theme-pick="'+t[0]+'" aria-pressed="'+(th===t[0])+'"><span class="dot" style="background:'+t[2]+'"><i style="background:linear-gradient(90deg,'+t[3]+' 50%,'+t[4]+' 50%)"></i></span>'+t[1]+'</button>').join('')+'</div></div>';
+  const inst=isStandalone()?'':'<div class="card"><h3>앱으로 설치</h3><p class="sub">설치하면 주소창과 브라우저 메뉴 없이 앱처럼 열려요. 아이콘 색은 설치할 때 고른 테마를 따라가요.</p>'+
+    (installEvt?'<button class="btn full" data-c="install">앱 설치하기</button>':'<p class="sub" style="margin:0">브라우저 메뉴(⋮ 또는 ≡)에서 <b>앱 설치</b> 또는 <b>홈 화면에 추가 → 설치</b>를 골라 주세요. 이미 바로가기로 추가한 아이콘이 있다면 먼저 지우고 다시 설치해야 주소창 없이 열려요.</p>')+'</div>';
+  view.innerHTML=inst+look+'<div class="card"><h3 class="serif">기본값</h3><p class="sub">기록이 2번 미만일 때 예측에 쓰여요. 기록이 쌓이면 실제 평균으로 바뀌어요.</p>'+
     '<div class="row"><div class="field" style="flex:1"><label class="f" for="cl">주기 길이(일)</label><input type="number" id="cl" min="15" max="60" inputmode="numeric" value="'+data.settings.cycleLen+'"></div>'+
     '<div class="field" style="flex:1"><label class="f" for="pl">생리 기간(일)</label><input type="number" id="pl" min="1" max="14" inputmode="numeric" value="'+data.settings.periodLen+'"></div></div>'+
     '<button class="btn full" data-c="saveset">저장</button></div>'+
@@ -804,6 +811,7 @@ view.addEventListener('click',e=>{
   if(b.dataset.themePick){data.settings.theme=b.dataset.themePick;saveLocal();applyTheme();render();return}
   if(b.dataset.nav!==undefined){const n=+b.dataset.nav;if(n===0){const d=new Date();cursor=new Date(d.getFullYear(),d.getMonth(),1)}else cursor=new Date(cursor.getFullYear(),cursor.getMonth()+n,1);render();return}
   const c=b.dataset.c;if(!c)return;
+  if(c==='install'){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;render()})}return}
   if(c==='pair-new'){
     if(!data.settings.name){toast('먼저 상대에게 보일 이름을 적어 주세요');$('#myname').focus();return}
     data.sync={secret:b64e(crypto.getRandomValues(new Uint8Array(32))),role:'A',shareLogs:true,dirty:true};keys=null;saveLocal();

@@ -1,0 +1,36 @@
+{
+  "id": "./",
+  "name": "둘의 달력",
+  "short_name": "둘의 달력",
+  "description": "둘이 함께 보는 생리 주기 달력",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "display_override": [
+    "standalone"
+  ],
+  "orientation": "portrait",
+  "background_color": "#F6F6F4",
+  "theme_color": "#F6F6F4",
+  "lang": "ko",
+  "icons": [
+    {
+      "src": "icon-rose-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-rose-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "icon-rose-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ]
+}

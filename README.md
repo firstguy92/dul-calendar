@@ -58,4 +58,5 @@
 | config.js | Supabase 주소와 공개 키 |
 | schema.sql | Supabase에 만들 표와 함수 |
 | sw.js | 오프라인에서도 열리게 하는 서비스 워커 |
-| manifest.json, *.png | 홈 화면 앱 아이콘과 설정 |
+| manifest*.json | 앱 설치 정보(테마별로 하나씩) |
+| icon*.png, apple-touch-icon.png | 테마별 앱 아이콘 |
