@@ -859,10 +859,20 @@ $('#gear').addEventListener('click',()=>goTab('settings'));
 $('#who').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;viewing=b.dataset.who;render()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sheetDate)closeSheet()});
 // phone back button: close the sheet first, then return to the home tab
-window.addEventListener('popstate',()=>{
+// a guard entry sits above the first page, so the first back press on the home tab only warns
+let guardActive=!!(history.state&&history.state.dul&&history.state.dul!=='base');
+try{if(!history.state)history.replaceState({dul:'base'},'')}catch(e){}
+// browsers ignore history entries added without a tap, so the guard is (re)added on the next touch
+const armGuard=()=>{if(!guardActive&&(!history.state||history.state.dul==='base')){history.pushState({dul:'guard'},'');guardActive=true}};
+document.addEventListener('pointerdown',armGuard,true);
+document.addEventListener('keydown',armGuard,true);
+window.addEventListener('popstate',e=>{
+  const st=e.state&&e.state.dul;
+  if(!st||st==='base')guardActive=false;
   if(ignorePop){ignorePop=false;return}
   if(sheetDate){closeSheet(true);return}
-  if(tab!=='home'){tab='home';render();window.scrollTo(0,0)}
+  if(tab!=='home'){tab='home';render();window.scrollTo(0,0);return}
+  if(!guardActive)toast('뒤로가기를 한 번 더 누르면 종료돼요');
 });
 // swipe the sheet down to close it
 (function(){
