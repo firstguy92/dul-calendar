@@ -13,7 +13,9 @@
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="icon" href="icon-192.png">
 <title>둘의 달력</title>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Jua&display=swap">
 <style>
 :root{
   --bg:#F6F6F4;--surface:#FFFFFF;--surface2:#F1F1EE;--ink:#1D1D1F;--muted:#8B8B90;--line:#EDEDEA;
@@ -59,7 +61,7 @@
 html{scroll-padding-top:env(safe-area-inset-top,0px)}
 *,*::before,*::after{box-sizing:border-box}
 [hidden]{display:none!important}
-body{margin:0;background:var(--bg);color:var(--ink);font-family:"Pretendard Variable",Pretendard,-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;font-size:16px;line-height:1.5;letter-spacing:-.01em;word-break:keep-all;overflow-wrap:anywhere;-webkit-font-smoothing:antialiased}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:"Gowun Dodum",-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",sans-serif;font-size:16px;line-height:1.5;letter-spacing:-.01em;word-break:keep-all;overflow-wrap:anywhere;-webkit-font-smoothing:antialiased}
 body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--bg)}
 svg{font-family:inherit}
 .serif{font-weight:700}
@@ -231,6 +233,12 @@ ol.how li{margin-bottom:6px}
 @media (prefers-reduced-motion:reduce){.couple .ch,.couple .hh{animation:none}}
 .cstat{margin:6px 0 16px;font-size:13.5px;color:var(--muted)}
 
+/* rounded display font for titles, numbers and buttons */
+header.top h1,.sthead .big,.sechead h3,.card h3,.headline,.dbox,.stat b,.btn,.pill,.monthbar b,.dphead h3,.sheet h3,.shrow h3,
+.rec b,.notice b,.seg button,.dchip,.partner b,.hyear,.hr.cur,.wnbox b,.upbar,.tile,.chip,.modeseg button,.sw,nav.tabs button,.grp .lb,.bar,.day .ml,.cstat b{
+  font-family:"Jua","Gowun Dodum",-apple-system,"Apple SD Gothic Neo",sans-serif;font-weight:400!important;letter-spacing:0}
+.stat b small{font-family:"Gowun Dodum",sans-serif}
+
 /* update notice */
 .wn{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:24px}
 .wnbox{background:var(--surface);border-radius:22px;padding:24px 22px 20px;max-width:360px;width:100%}
@@ -310,8 +318,8 @@ nav.tabs button[aria-current="page"]{color:var(--ink);font-weight:700;opacity:1}
 <script>
 (function(){
 const KEY='dul-cycle:v1';
-const APP_VERSION='2026.11.18-8';
-const CHANGES=['새 버전이 나오면 이렇게 알려 드려요','설정에서 생리 예정 7일 전·3일 전 알림을 켤 수 있어요'];
+const APP_VERSION='2026.11.18-9';
+const CHANGES=['글꼴을 더 아기자기하게 바꿨어요 (제목은 주아, 본문은 고운돋움)'];
 const FLOW=['없음','적음','보통','많음'];
 const PAIN=['없음','약함','보통','심함'];
 const MOODS=['좋음','평온','예민','우울','불안','피곤'];
