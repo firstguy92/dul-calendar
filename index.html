@@ -200,6 +200,17 @@ textarea{resize:vertical;min-height:84px;font-size:14.5px;word-break:break-all}
 ol.how{margin:0;padding-left:20px;font-size:14.5px}
 ol.how li{margin-bottom:6px}
 
+/* couple card */
+.couple{text-align:center;padding-top:14px}
+.couple svg{display:block;width:100%;max-width:340px;height:auto;margin:0 auto}
+.couple .ch{animation:bob 2.8s ease-in-out infinite}
+.couple .ch.r{animation-delay:-1.4s}
+.couple .hh{transform-box:fill-box;transform-origin:center;animation:beat 1.8s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-4px)}}
+@keyframes beat{0%,60%,100%{transform:scale(1)}15%{transform:scale(1.2)}30%{transform:scale(1)}45%{transform:scale(1.12)}}
+@media (prefers-reduced-motion:reduce){.couple .ch,.couple .hh{animation:none}}
+.cstat{margin:6px 0 16px;font-size:13.5px;color:var(--muted)}
+
 /* appearance settings */
 .modeseg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface2);border-radius:12px;padding:3px;margin-bottom:18px}
 .modeseg button{border:0;background:transparent;border-radius:10px;padding:9px 0;font-size:14.5px;color:var(--muted)}
@@ -306,7 +317,9 @@ function goTab(t){
   }
   render();window.scrollTo(0,0);
 }
-let selDate=TODAY,tab='home',viewing='me',cursor=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1)})();
+function preferPartner(){return !!data.partner&&((data.sync&&data.sync.role==='B')||!data.days.length)}
+let userPicked=false;
+let selDate=TODAY,tab='home',viewing=preferPartner()?'partner':'me',cursor=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1)})();
 
 function profile(){
   if(viewing==='partner'&&data.partner){const p=data.partner;return {days:p.days||[],logs:p.logs||{},settings:p.settings||{cycleLen:28,periodLen:5},name:p.name||'연인',readonly:true}}
@@ -386,7 +399,8 @@ function renderWho(){
   const w=$('#who');
   if(!data.partner){w.hidden=true;viewing='me';return}
   w.hidden=false;
-  w.innerHTML='<button data-who="me" aria-pressed="'+(viewing==='me')+'">'+esc(data.settings.name||'나')+'</button><button data-who="partner" aria-pressed="'+(viewing==='partner')+'">'+esc(data.partner.name||'연인')+'</button>';
+  const me='<button data-who="me" aria-pressed="'+(viewing==='me')+'">'+esc(data.settings.name||'나')+'</button>',pt='<button data-who="partner" aria-pressed="'+(viewing==='partner')+'">'+esc(data.partner.name||'연인')+'</button>';
+  w.innerHTML=preferPartner()?pt+me:me+pt;
 }
 const THEMES=[['coral','기본','#F6F6F4','#EE6A44','#6A4FA0'],['rose','로즈','#FAF6F7','#E0567D','#3F6FB5'],['lavender','라벤더','#F6F5FA','#D2649A','#7A5CD6'],['ocean','오션','#F4F7F9','#E8705A','#2F7FD0']];
 function applyTheme(){
@@ -703,7 +717,7 @@ async function pull(){
   try{await ensureKeys();const o=await getSlot(keys.theirs);
     if(o){const before=data.partner&&data.partner.at;
       data.partner={name:typeof o.name==='string'?o.name.slice(0,20):'연인',days:cleanDays(o.days),logs:cleanLogs(o.logs),settings:cleanSettings(o.settings),at:typeof o.at==='number'?o.at:Date.now()};
-      saveLocal();if(before!==data.partner.at&&!sheetDate&&!typing())render();}
+      saveLocal();if(!userPicked&&viewing!=='partner'&&preferPartner()){viewing='partner';if(!sheetDate&&!typing())render()}else if(before!==data.partner.at&&!sheetDate&&!typing())render();}
     setStatus('ok');
   }catch(e){setStatus('error')}
 }
@@ -714,7 +728,7 @@ function parsePair(text){const m=String(text).match(/DULP1\.([A-Za-z0-9_-]+)/);i
 const otherRole=()=>data.sync.role==='A'?'B':'A';
 function inviteText(){return (data.settings.name||'내')+' 둘의 달력 초대 코드예요. 앱의 연결 탭에서 받은 코드로 연결하기에 붙여넣어 주세요.\n'+pairCode(otherRole())}
 async function joinWith(code){
-  data.sync={secret:code.secret,role:code.role,shareLogs:true,dirty:true};keys=null;saveLocal();render();
+  data.sync={secret:code.secret,role:code.role,shareLogs:true,dirty:true,since:Date.now()};keys=null;saveLocal();render();
   try{await ensureKeys();const mine=await getSlot(keys.mine);
     if(mine&&Array.isArray(mine.days)&&mine.days.length){
       if(!data.days.length||confirm('서버에 저장된 내 기록이 있어요. 이 폰의 기록 대신 서버의 기록을 불러올까요?')){
@@ -735,15 +749,40 @@ function renderSync(){
   }else{
     const p=data.partner,st=syncState;
     const line=st.status==='error'?'동기화에 실패했어요. 인터넷 연결을 확인해 주세요.':st.last?'마지막 동기화 '+timeStr(st.last):'동기화하는 중이에요';
-    h+='<div class="card"><h3 class="serif">자동 동기화 켜짐</h3><p class="sub">'+line+'</p>'+
-      (p?'<div class="partner"><b class="serif">'+esc(p.name||'연인')+'</b><p>'+timeStr(p.at)+'에 마지막으로 기록이 바뀌었어요</p><button class="btn full" data-c="viewp">오늘 보기</button></div>'
-        :'<div class="alert info"><span class="ic">i</span><span>아직 연인의 기록이 없어요. 아래에서 초대 코드를 보내 주세요.</span></div>')+
-      '<button class="btn ghost full" style="margin-top:12px" data-c="sync-now">지금 동기화</button></div>';
+    const days=data.sync.since?diff(ymd(new Date(data.sync.since)),TODAY)+1:0;
+    h+='<div class="card couple">'+coupleCard(data.settings.name||'나',p?(p.name||'연인'):null)+
+      '<p class="cstat">'+(p&&days?'함께 연결한 지 '+days+'일째 · ':'')+esc(line)+'</p>'+
+      (p?'<div class="row2" style="margin-top:0"><button class="btn" data-c="viewp">'+esc(p.name||'연인')+' 달력 보기</button><button class="btn ghost" data-c="sync-now">지금 동기화</button></div>'
+        :'<div class="alert info" style="text-align:left"><span class="ic">i</span><span>아직 연인이 연결되지 않았어요. 아래에서 초대 코드를 보내 주세요.</span></div><button class="btn ghost full" style="margin-top:4px" data-c="sync-now">지금 동기화</button>')+'</div>';
     h+='<div class="card"><h3 class="serif">공유 설정</h3>'+nameField()+'<label class="check"><input type="checkbox" id="sharelogs" '+(data.sync.shareLogs!==false?'checked':'')+'> 증상과 메모도 함께 공유하기</label></div>';
     h+='<div class="card"><h3 class="serif">초대 코드와 복구 코드</h3><p class="sub">초대 코드는 연인에게, 복구 코드는 폰을 바꿀 때 나에게 필요해요. 두 코드 모두 기록을 여는 열쇠라서 다른 사람에게 보내면 안 돼요.</p><div class="row"><button class="btn ghost" style="flex:1" data-c="send-invite">초대 코드 보내기</button><button class="btn ghost" style="flex:1" data-c="send-recover">복구 코드 저장</button></div></div>';
     h+='<div class="card"><h3 class="serif">연결 끊기</h3><p class="sub">이 폰의 연결을 끊고 서버에 있는 내 암호화 기록을 지워요. 이 폰에 있는 내 기록은 그대로 남아요.</p><button class="btn danger full" data-c="unpair">연결 끊기</button></div>';
   }
   view.innerHTML=h;
+}
+function charSvg(cx,cy,fill,stroke,deco,side,sleepy){
+  const b='M'+(cx-40)+','+(cy+30)+' C'+(cx-48)+','+(cy-12)+' '+(cx-30)+','+(cy-46)+' '+cx+','+(cy-46)+' C'+(cx+30)+','+(cy-46)+' '+(cx+48)+','+(cy-12)+' '+(cx+40)+','+(cy+30)+' Q'+cx+','+(cy+40)+' '+(cx-40)+','+(cy+30)+'Z';
+  const arm=side*41;
+  let g='<path d="'+b+'" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2.5" stroke-linejoin="round"/>'+
+    '<circle cx="'+(cx+side*40)+'" cy="'+(cy-6)+'" r="7.5" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2.5"/>'+
+    '<circle cx="'+(cx-side*38)+'" cy="'+(cy+14)+'" r="7" fill="'+fill+'" stroke="'+stroke+'" stroke-width="2.5"/>';
+  if(deco==='bow')g+='<g transform="translate('+(cx-20)+','+(cy-42)+') rotate(-18)"><path d="M0,0 L-11,-7 L-11,7Z M0,0 L11,-7 L11,7Z" fill="'+stroke+'"/><circle r="3.4" fill="'+stroke+'"/></g>';
+  if(deco==='leaf')g+='<path d="M'+cx+','+(cy-45)+' q-2,-10 4,-16" fill="none" stroke="'+stroke+'" stroke-width="2.5" stroke-linecap="round"/><path d="M'+(cx+4)+','+(cy-61)+' q12,-4 16,4 q-10,8 -16,-4z" fill="'+stroke+'"/>';
+  if(sleepy)g+='<path d="M'+(cx-17)+','+(cy-8)+' h9 M'+(cx+8)+','+(cy-8)+' h9" stroke="var(--ink)" stroke-width="2.6" stroke-linecap="round"/><text x="'+(cx+30)+'" y="'+(cy-40)+'" font-size="15" font-weight="700" fill="var(--muted)">z</text><text x="'+(cx+39)+'" y="'+(cy-52)+'" font-size="11" font-weight="700" fill="var(--muted)">z</text>';
+  else g+='<ellipse cx="'+(cx-12)+'" cy="'+(cy-8)+'" rx="3.4" ry="4.4" fill="var(--ink)"/><ellipse cx="'+(cx+12)+'" cy="'+(cy-8)+'" rx="3.4" ry="4.4" fill="var(--ink)"/><circle cx="'+(cx-11)+'" cy="'+(cy-10)+'" r="1.2" fill="#fff"/><circle cx="'+(cx+13)+'" cy="'+(cy-10)+'" r="1.2" fill="#fff"/>';
+  g+='<circle cx="'+(cx-22)+'" cy="'+(cy+4)+'" r="5.5" fill="#F49AA8" opacity=".55"/><circle cx="'+(cx+22)+'" cy="'+(cy+4)+'" r="5.5" fill="#F49AA8" opacity=".55"/>'+
+    '<path d="M'+(cx-6)+','+(cy+3)+' Q'+cx+','+(cy+10)+' '+(cx+6)+','+(cy+3)+'" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"/>';
+  return g;
+}
+function coupleCard(meName,pName){
+  const cut=n=>n.length>8?n.slice(0,8)+'…':n,wait=!pName;
+  const heart='<path class="hh" d="M160,86 C142,72 136,60 144,52 C150,46 158,48 160,55 C162,48 170,46 176,52 C184,60 178,72 160,86Z" fill="'+(wait?'none':'var(--period)')+'" stroke="'+(wait?'var(--muted)':'var(--period)')+'" stroke-width="2.5" stroke-dasharray="'+(wait?'4 4':'0')+'"/>';
+  return '<svg viewBox="0 0 320 170" role="img" aria-label="'+esc(meName)+(wait?', 연결 기다리는 중':' 하트 '+esc(pName))+'">'+
+    '<path d="M116,86 Q160,'+(wait?'86':'108')+' 204,86" fill="none" stroke="'+(wait?'var(--line)':'var(--period-soft)')+'" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"/>'+heart+
+    '<g class="ch">'+charSvg(68,92,'var(--period-soft)','var(--period)','bow',1,false)+'</g>'+
+    '<g class="ch r">'+charSvg(252,92,wait?'var(--surface2)':'var(--point-soft)',wait?'var(--muted)':'var(--point)','leaf',-1,wait)+'</g>'+
+    '<text x="68" y="158" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ink)">'+esc(cut(meName))+'</text>'+
+    '<text x="252" y="158" text-anchor="middle" font-size="15" font-weight="700" fill="'+(wait?'var(--muted)':'var(--ink)')+'">'+esc(wait?'기다리는 중':cut(pName))+'</text></svg>';
 }
 function renderConnect(){if(SYNC_ON)renderSync();else renderManual()}
 function syncInit(){
@@ -759,7 +798,7 @@ function syncInit(){
 let lastShare='';
 function renderManual(){
   const p=data.partner;
-  let h='<div class="card"><h3 class="serif">내 달력 보내기</h3><p class="sub">서버 없이 코드로 주고받아요. 기록이 바뀌면 코드를 다시 보내 주세요.</p>'+
+  let h=(p?'<div class="card couple">'+coupleCard(data.settings.name||'나',p.name||'연인')+'<p class="cstat">'+timeStr(p.at)+'에 받은 정보예요</p></div>':'')+'<div class="card"><h3 class="serif">내 달력 보내기</h3><p class="sub">서버 없이 코드로 주고받아요. 기록이 바뀌면 코드를 다시 보내 주세요.</p>'+
     '<div class="field"><label class="f" for="myname">상대에게 보일 내 이름</label><input type="text" id="myname" maxlength="20" value="'+esc(data.settings.name)+'" placeholder="예: 지민"></div>'+
     '<label class="check"><input type="checkbox" id="withlogs" checked> 증상과 메모도 함께 보내기</label>'+
     '<button class="btn full" data-c="make">공유 코드 만들기</button>'+
@@ -814,7 +853,7 @@ view.addEventListener('click',e=>{
   if(c==='install'){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;render()})}return}
   if(c==='pair-new'){
     if(!data.settings.name){toast('먼저 상대에게 보일 이름을 적어 주세요');$('#myname').focus();return}
-    data.sync={secret:b64e(crypto.getRandomValues(new Uint8Array(32))),role:'A',shareLogs:true,dirty:true};keys=null;saveLocal();
+    data.sync={secret:b64e(crypto.getRandomValues(new Uint8Array(32))),role:'A',shareLogs:true,dirty:true,since:Date.now()};keys=null;saveLocal();
     sendText(inviteText(),'둘의 달력 초대 코드');push();render();return;
   }
   if(c==='pair-join'){try{const code=parsePair($('#paircode').value);joinWith(code)}catch(err){toast(err.message)}return}
@@ -856,7 +895,7 @@ view.addEventListener('click',e=>{
 });
 document.querySelector('nav.tabs').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;goTab(b.dataset.tab)});
 $('#gear').addEventListener('click',()=>goTab('settings'));
-$('#who').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;viewing=b.dataset.who;render()});
+$('#who').addEventListener('click',e=>{const b=e.target.closest('button');if(!b)return;userPicked=true;viewing=b.dataset.who;render()});
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&sheetDate)closeSheet()});
 // phone back button: close the sheet first, then return to the home tab
 // a guard entry sits above the first page, so the first back press on the home tab only warns
