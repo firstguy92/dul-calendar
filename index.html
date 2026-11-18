@@ -170,6 +170,24 @@ header.top h1{margin:0;font-size:24px;font-weight:800;flex:1;letter-spacing:-.03
 .dchip.o{background:var(--ov);color:var(--ov-ink)}
 .hint{font-size:13px;color:var(--muted);margin:10px 4px 0}
 
+/* continuous calendar */
+.cal .wkh{border-bottom:1px solid var(--line)}
+.cscroll{position:relative;overflow-y:auto;height:clamp(330px,calc(100dvh - var(--hh,58px) - 360px - env(safe-area-inset-bottom,0px)),620px);overscroll-behavior:contain;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.cscroll::-webkit-scrollbar{display:none}
+.cscroll .wrow:first-child{border-top:0}
+.day{position:relative}
+.day.mb{box-shadow:inset 0 2px 0 var(--muted)}
+.day .ml{position:absolute;top:1px;left:50%;transform:translateX(-50%);font-size:10.5px;font-weight:800;line-height:1;color:var(--period-soft-ink);white-space:nowrap}
+.daypanel{margin-top:12px}
+/* cycle history */
+.htab{margin:0 -20px}
+.hhd,.hr{display:grid;grid-template-columns:1fr 64px 56px;padding:12px 20px;font-variant-numeric:tabular-nums}
+.hhd{background:var(--surface2);color:var(--muted);font-size:13.5px;padding:9px 20px}
+.hr{font-size:16px}
+.hr.cur{font-weight:700}
+.hr .odd{color:var(--period);font-weight:700}
+.hyear{font-size:17px;font-weight:800;margin:22px 0 10px}
+
 /* report */
 .cmp{display:block;width:100%;max-width:300px;margin:12px auto 0;height:auto}
 .chartwrap{overflow-x:auto;margin-top:6px}
@@ -278,7 +296,7 @@ nav.tabs button[aria-current="page"]{color:var(--ink);font-weight:700;opacity:1}
 <script>
 (function(){
 const KEY='dul-cycle:v1';
-const APP_VERSION='2026.11.18-3';
+const APP_VERSION='2026.11.18-6';
 const FLOW=['없음','적음','보통','많음'];
 const PAIN=['없음','약함','보통','심함'];
 const MOODS=['좋음','평온','예민','우울','불안','피곤'];
@@ -316,14 +334,16 @@ function goTab(t){
     else if(!onSub)history.pushState({dul:'tab'},'');
     tab=t;
   }
-  render();window.scrollTo(0,0);
+  render();if(t!=='cal')window.scrollTo(0,0);
 }
-function preferPartner(){return !!data.partner&&((data.sync&&data.sync.role==='B')||!data.days.length)}
+const isViewer=()=>!!(data.sync&&data.sync.role==='B');
+const partnerHasData=()=>!!(data.partner&&data.partner.days&&data.partner.days.length);
+function preferPartner(){return partnerHasData()&&(isViewer()||(!data.sync&&!data.days.length))}
 let userPicked=false;
 let selDate=TODAY,tab='home',viewing=preferPartner()?'partner':'me',cursor=(()=>{const d=new Date();return new Date(d.getFullYear(),d.getMonth(),1)})();
 
 function profile(){
-  if(viewing==='partner'&&data.partner){const p=data.partner;return {days:p.days||[],logs:p.logs||{},settings:p.settings||{cycleLen:28,periodLen:5},name:p.name||'연인',readonly:true}}
+  if(isViewer()||(viewing==='partner'&&partnerHasData())){const p=data.partner||{};return {days:p.days||[],logs:p.logs||{},settings:p.settings||{cycleLen:28,periodLen:5},name:p.name||'연인',readonly:true}}
   return {days:data.days,logs:data.logs,settings:data.settings,name:data.settings.name||'나',readonly:false};
 }
 
@@ -398,7 +418,7 @@ const view=$('#view');
 function toast(m){const t=$('#toast');t.textContent=m;t.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>t.classList.remove('on'),2200)}
 function renderWho(){
   const w=$('#who');
-  if(!data.partner){w.hidden=true;viewing='me';return}
+  if(isViewer()||!partnerHasData()){w.hidden=true;if(!isViewer())viewing='me';return}
   w.hidden=false;
   const me='<button data-who="me" aria-pressed="'+(viewing==='me')+'">'+esc(data.settings.name||'나')+'</button>',pt='<button data-who="partner" aria-pressed="'+(viewing==='partner')+'">'+esc(data.partner.name||'연인')+'</button>';
   w.innerHTML=preferPartner()?pt+me:me+pt;
@@ -411,12 +431,18 @@ function applyTheme(){
   const mf=document.getElementById('mf');if(mf){const h=(st.theme&&st.theme!=='coral')?'manifest-'+st.theme+'.json':'manifest.json';if(mf.getAttribute('href')!==h)mf.setAttribute('href',h)}
   const m=document.querySelector('meta[name=theme-color]');if(m)m.setAttribute('content',getComputedStyle(document.body).backgroundColor);
 }
+let lastRendered=null;
 function render(){
   renderWho();
   const td=parse(TODAY);
   $('#ttl').textContent={home:(td.getMonth()+1)+'월 '+td.getDate()+'일('+WD[td.getDay()]+')',cal:'달력',report:'리포트',connect:'연결',settings:'설정'}[tab];
   document.querySelectorAll('nav.tabs button').forEach(b=>{if(b.dataset.tab===tab)b.setAttribute('aria-current','page');else b.removeAttribute('aria-current')});
+  const keepY=(tab==='cal'&&lastRendered==='cal')?window.scrollY:null;
+  document.documentElement.style.setProperty('--hh',$('header.top').offsetHeight+'px');
+  view.classList.toggle('calmode',tab==='cal');
   ({home:renderHome,cal:renderCal,report:renderReport,connect:renderConnect,settings:renderSettings})[tab]();
+  if(tab==='cal'&&keepY!==null)window.scrollTo(0,keepY);
+  lastRendered=tab;
 }
 
 // ---------- today tab ----------
@@ -459,7 +485,7 @@ function marks(lg){
   return m.slice(0,3).map(c=>'<i style="background:'+c+'"></i>').join('');
 }
 function renderHome(){
-  const p=profile(),a=analyze(p),k=phaseKey(a),st=statusText(a);
+  const p=profile(),a=analyze(p),k=phaseKey(a),st=(p.readonly&&!a.last)?{big:'아직 공유된 기록이 없어요',small:'연인이 기록하면 여기에 보여요'}:statusText(a);
   let h=p.readonly?partnerNotice(a,p.name):'';
   h+='<div class="card"><div class="sthead"><span class="dbox">'+parse(TODAY).getDate()+'</span><div><span class="big">'+esc(st.big)+'</span><span class="small">'+esc(st.small)+'</span></div></div>'+cycleBar(a);
   const sun=addDays(TODAY,-parse(TODAY).getDay());
@@ -493,37 +519,71 @@ function dayChips(a,s){
   if(t==='pred')out.push(['p','생리 예정']);if(t==='fertile')out.push(['f','가임기']);if(t==='ov')out.push(['o','배란 예정일']);
   return out.map(x=>'<span class="dchip '+x[0]+'">'+x[1]+'</span>').join('');
 }
+const ymKey=d=>d.getFullYear()+'-'+pad(d.getMonth()+1);
+function panelHtml(p,a){
+  const sd=selDate,d=parse(sd);
+  return '<div class="dphead"><h3>'+(d.getMonth()+1)+'월 '+d.getDate()+'일('+WD[d.getDay()]+')</h3>'+
+    (p.readonly?'':'<button class="btn sm" data-q="edit">'+(sd>TODAY?'생리 기록':'기록하기')+'</button>')+'</div>'+
+    '<div class="chiprow">'+dayChips(a,sd)+'</div>'+
+    (sd<=TODAY?recList(p.logs[sd],p.readonly?'이 날 공유된 기록이 없어요':'이 날 남긴 기록이 없어요'):'<p class="empty">아직 오지 않은 날이에요. 표시된 기간은 예측이에요.</p>');
+}
+const monthLabel=()=>cursor.getFullYear()+'년 '+(cursor.getMonth()+1)+'월';
+let calTop=null,swallowClick=false,calTick=false;
+// one continuous calendar: every week from the first record (max 3 years back) to a year ahead
 function renderCal(){
-  const p=profile(),a=analyze(p);
-  const y=cursor.getFullYear(),m=cursor.getMonth(),lastDay=ymd(new Date(y,m+1,0));
-  const ws=ymd(new Date(y,m,1-new Date(y,m,1).getDay()));
+  const p=profile(),a=analyze(p),t0=parse(TODAY);
+  let start=new Date(t0.getFullYear(),t0.getMonth()-12,1);
+  if(p.days.length){const f=parse(p.days[0]),fm=new Date(f.getFullYear(),f.getMonth(),1);if(fm<start)start=fm}
+  const lim=new Date(t0.getFullYear()-3,0,1);if(start<lim)start=lim;
+  const endDay=ymd(new Date(t0.getFullYear(),t0.getMonth()+13,0));
   const BL={period:'생리',pred:'생리 예정',fz:'가임기'};
-  let rows='';
-  for(let w=0;w<6;w++){
-    const st=addDays(ws,w*7);if(st>lastDay)break;
-    const ds=[];for(let i=0;i<7;i++)ds.push(addDays(st,i));
+  let ws=ymd(new Date(start.getFullYear(),start.getMonth(),1-start.getDay())),rows='';
+  for(;ws<=endDay;ws=addDays(ws,7)){
+    const ds=[];for(let i=0;i<7;i++)ds.push(addDays(ws,i));
     let days='',bars='';
-    ds.forEach(s=>{const d=parse(s),c=['day'];if(d.getMonth()!==m)c.push('out');if(s===TODAY)c.push('today');if(s===selDate)c.push('sel');
-      days+='<button class="'+c.join(' ')+'" data-date="'+s+'" aria-label="'+md(s)+'"><span class="num">'+d.getDate()+'</span><span class="marks">'+marks(p.logs[s])+'</span></button>'});
+    ds.forEach(s=>{const d=parse(s),c=['day'];if(s===TODAY)c.push('today');if(s===selDate)c.push('sel');
+      if(parse(addDays(s,-7)).getMonth()!==d.getMonth())c.push('mb');
+      days+='<button class="'+c.join(' ')+'" data-date="'+s+'" aria-label="'+md(s)+'">'+(d.getDate()===1?'<span class="ml">'+(d.getMonth()+1)+'월</span>':'')+'<span class="num">'+d.getDate()+'</span><span class="marks">'+marks(p.logs[s])+'</span></button>'});
     for(let i=0;i<7;){
-      const bt=bandType(a.map[ds[i]]||'');if(!bt){i++;continue}
-      let j=i;while(j+1<7&&bandType(a.map[ds[j+1]]||'')===bt)j++;
-      const rs=bandType(a.map[addDays(ds[i],-1)]||'')!==bt,re=bandType(a.map[addDays(ds[j],1)]||'')!==bt;
-      bars+='<span class="bar '+bt+(rs?' rs':'')+(re?' re':'')+'" style="grid-column:'+(i+1)+' / '+(j+2)+'">'+(rs?BL[bt]:'')+'</span>';
+      const t=bandType(a.map[ds[i]]||'');if(!t){i++;continue}
+      let j=i;while(j+1<7&&bandType(a.map[ds[j+1]]||'')===t)j++;
+      const rs=bandType(a.map[addDays(ds[i],-1)]||'')!==t,re=bandType(a.map[addDays(ds[j],1)]||'')!==t;
+      bars+='<span class="bar '+t+(rs?' rs':'')+(re?' re':'')+'" style="grid-column:'+(i+1)+' / '+(j+2)+'">'+(rs?BL[t]:'')+'</span>';
       i=j+1;
     }
     ds.forEach((s,i)=>{if(a.map[s]==='ov')bars+='<span class="bar ovp" style="grid-column:'+(i+1)+' / '+(i+2)+'">배란일</span>'});
-    rows+='<div class="wrow"><div class="days">'+days+'</div><div class="bars">'+bars+'</div></div>';
+    rows+='<div class="wrow" data-wk="'+ws+'"><div class="days">'+days+'</div><div class="bars">'+bars+'</div></div>';
   }
-  const sd=selDate,sdd=parse(sd);
-  const panel='<div class="card daypanel"><div class="dphead"><h3>'+(sdd.getMonth()+1)+'월 '+sdd.getDate()+'일('+WD[sdd.getDay()]+')</h3>'+
-    (p.readonly?'':'<button class="btn sm" data-q="edit">'+(sd>TODAY?'생리 기록':'기록하기')+'</button>')+'</div>'+
-    '<div class="chiprow">'+dayChips(a,sd)+'</div>'+
-    (sd<=TODAY?recList(p.logs[sd],p.readonly?'이 날 공유된 기록이 없어요':'이 날 남긴 기록이 없어요'):'<p class="empty">아직 오지 않은 날이에요. 표시된 기간은 예측이에요.</p>')+'</div>';
   view.innerHTML=(p.readonly?partnerNotice(a,p.name):'')+
-    '<div class="monthbar"><b>'+y+'년 '+(m+1)+'월</b><div class="navbtns"><button data-nav="-1" aria-label="이전 달">‹</button><button data-nav="0">오늘</button><button data-nav="1" aria-label="다음 달">›</button></div></div>'+
-    '<div class="cal"><div class="wkh">'+WD.map(w=>'<span>'+w+'</span>').join('')+'</div>'+rows+'</div>'+panel+
+    '<div class="monthbar"><b id="calLabel">'+monthLabel()+'</b><div class="navbtns"><button data-nav="-1" aria-label="이전 달">‹</button><button data-nav="0">오늘</button><button data-nav="1" aria-label="다음 달">›</button></div></div>'+
+    '<div class="cal"><div class="wkh">'+WD.map(w=>'<span>'+w+'</span>').join('')+'</div><div class="cscroll" id="cs">'+rows+'</div></div>'+
+    '<div class="card daypanel" id="dpanel">'+panelHtml(p,a)+'</div>'+
     '<p class="note">배란일과 가임기는 평균 주기로 계산한 추정치라 피임 수단으로 쓰기에는 정확하지 않아요.</p>';
+  const cs=$('#cs');
+  if(lastRendered==='cal'&&calTop!==null)cs.scrollTop=calTop;else scrollToDate(selDate,false,1);
+  syncCalLabel();
+  cs.addEventListener('scroll',()=>{calTop=cs.scrollTop;if(calTick)return;calTick=true;requestAnimationFrame(()=>{calTick=false;syncCalLabel()})},{passive:true});
+}
+// put the week holding date s at the top (rowsAbove = rows left visible above it)
+function scrollToDate(s,smooth,rowsAbove){
+  const cs=$('#cs');if(!cs)return;
+  const el=cs.querySelector('.wrow[data-wk="'+addDays(s,-parse(s).getDay())+'"]');if(!el)return;
+  const top=Math.max(0,el.offsetTop-(rowsAbove||0)*el.offsetHeight);
+  cs.scrollTo({top,behavior:smooth?'smooth':'auto'});calTop=top;
+}
+// the month shown in the header is the one a third of the way down the visible weeks
+function syncCalLabel(){
+  const cs=$('#cs');if(!cs)return;
+  const y=cs.scrollTop+cs.clientHeight*0.33;let row=null;
+  for(const r of cs.children){if(r.offsetTop<=y)row=r;else break}
+  if(!row)return;
+  const mid=parse(addDays(row.dataset.wk,3));cursor=new Date(mid.getFullYear(),mid.getMonth(),1);
+  const l=$('#calLabel');if(l)l.textContent=monthLabel();
+}
+function updateSel(){
+  view.querySelectorAll('.day.sel').forEach(e=>e.classList.remove('sel'));
+  const e=view.querySelector('.day[data-date="'+selDate+'"]');if(e)e.classList.add('sel');
+  const p=profile(),pn=$('#dpanel');if(pn)pn.innerHTML=panelHtml(p,analyze(p));
 }
 
 // ---------- day sheet ----------
@@ -536,6 +596,9 @@ function openSheet(d){const was=!!sheetDate;sheetDate=d;drawSheet();const sh=$('
 function closeSheet(fromPop){if(!sheetDate)return;const n=$('#note');if(n&&!profile().readonly)logSet(sheetDate,'note',n.value);sheetDate=null;$('#sheet').style.transform='translateY(105%)';
   if(fromPop!==true&&history.state&&history.state.dul==='sheet'){ignorePop=true;history.back()}$('#scrim').classList.remove('on');$('#sheet').classList.remove('on');render()}
 function drawSheet(){
+  const xb='<button class="xbtn" data-act="close" aria-label="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button>';
+  if(sheetDate==='history'){const pr=profile();
+    $('#sheetIn').innerHTML='<div class="shead"><div class="grab"></div><div class="shrow"><h3>지난 주기</h3>'+xb+'</div></div><div style="margin-top:14px">'+histTable(cycleRows(analyze(pr)))+'</div>';return}
   const d=sheetDate,p=profile(),a=analyze(p);const dt=parse(d);
   const st={period:'생리일',pred:'생리 예정일',fertile:'가임기 (추정)',ov:'배란 예정일 (추정)'}[a.map[d]]||'기록 없음';
   let h='<div class="shead"><div class="grab"></div><div class="shrow"><h3 class="serif">'+md(d)+' ('+WD[dt.getDay()]+')</h3><button class="xbtn" data-act="close" aria-label="닫기"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div></div><div class="chiprow" style="border:0;padding:0;margin:8px 0 18px">'+dayChips(a,d)+'</div>';
@@ -605,6 +668,20 @@ function lineChart(cs){
       '<text x="'+x(i).toFixed(1)+'" y="'+(H-9)+'" text-anchor="middle" font-size="12" fill="var(--muted)">'+(d.getMonth()+1)+'.'+d.getDate()+'</text>'});
   return '<div class="chartwrap">'+s+'</svg></div>';
 }
+function cycleRows(a){
+  const ps=a.periods,rows=ps.map((g,i)=>{const nx=ps[i+1];return {start:g.start,end:nx?addDays(nx.start,-1):null,plen:g.len,clen:nx?diff(g.start,nx.start):diff(g.start,TODAY)+1,cur:!nx}});
+  return rows.reverse();
+}
+function histTable(rows){
+  const f=s=>{const d=parse(s);return (d.getMonth()+1)+'.'+d.getDate()};
+  const ty=parse(TODAY).getFullYear();let h='',yr=null;
+  rows.forEach(r=>{const y=parse(r.start).getFullYear();
+    if(y!==yr){if(yr!==null)h+='</div>';yr=y;h+=(y!==ty||h?'<div class="hyear">'+y+'</div>':'')+'<div class="htab"><div class="hhd"><span>월경주기</span><span>기간</span><span>주기</span></div>'}
+    const odd=!r.cur&&(r.clen<21||r.clen>35);
+    h+='<div class="hr'+(r.cur?' cur':'')+'"><span>'+f(r.start)+'~'+(r.cur?'오늘':f(r.end))+'</span><span>'+r.plen+'</span><span'+(odd?' class="odd"':'')+'>'+r.clen+'</span></div>';
+  });
+  return h?h+'</div>':'<p class="empty">아직 기록된 주기가 없어요.</p>';
+}
 function renderReport(){
   const p=profile(),a=analyze(p),al=[];
   const done=a.cycles.filter(c=>c.len>=15&&c.len<=60);
@@ -637,6 +714,8 @@ function renderReport(){
     const reg=a.variability!==null&&a.variability<=7;
     h+='<div class="card"><h2 class="headline sm">'+(reg?'주기가 규칙적인 편이에요':'주기가 불규칙한 편이에요')+'</h2><p class="sub">'+(reg?'한두 번은 평소와 다를 수 있어요.':'최근 주기 길이가 최대 '+a.variability+'일까지 차이 나요.')+'</p>'+lineChart(done.slice(-6))+'</div>';
   }
+  const crow=cycleRows(a);
+  if(crow.length)h+='<div class="card"><div class="dphead"><h3>지난 주기</h3>'+(crow.length>5?'<button class="link" data-q="hist">전체 보기 ('+crow.length+')</button>':'')+'</div><div style="margin-top:12px">'+histTable(crow.slice(0,5))+'</div></div>';
   const stat=(v,u,l)=>'<div class="stat"><b>'+v+(u?'<small>'+u+'</small>':'')+'</b><span>'+l+'</span></div>';
   h+='<div class="stats">'+stat(a.avgCycle,'일','평균 주기')+stat(a.avgPeriod,'일','평균 생리 기간')+
     stat(a.variability===null?'–':a.variability,a.variability===null?'':'일','주기 길이 차이')+stat(a.periods.length,'회','기록한 생리')+'</div>';
@@ -751,12 +830,14 @@ function renderSync(){
     const p=data.partner,st=syncState;
     const line=st.status==='error'?'동기화에 실패했어요. 인터넷 연결을 확인해 주세요.':st.last?'마지막 동기화 '+timeStr(st.last):'동기화하는 중이에요';
     const days=data.sync.since?diff(ymd(new Date(data.sync.since)),TODAY)+1:0;
-    h+='<div class="card couple">'+coupleCard(data.settings.name||'나',p?(p.name||'연인'):null)+
+    const meN=data.settings.name||'나',pN=p?(p.name||'연인'):null,viewer=isViewer();
+    h+='<div class="card couple">'+(viewer?coupleCard(pN,meN):coupleCard(meN,pN))+
       '<p class="cstat">'+(p&&days?'함께 연결한 지 '+days+'일째 · ':'')+esc(line)+'</p>'+
-      (p?'<div class="row2" style="margin-top:0"><button class="btn" data-c="viewp">'+esc(p.name||'연인')+' 달력 보기</button><button class="btn ghost" data-c="sync-now">지금 동기화</button></div>'
-        :'<div class="alert info" style="text-align:left"><span class="ic">i</span><span>아직 연인이 연결되지 않았어요. 아래에서 초대 코드를 보내 주세요.</span></div><button class="btn ghost full" style="margin-top:4px" data-c="sync-now">지금 동기화</button>')+'</div>';
-    h+='<div class="card"><h3 class="serif">공유 설정</h3>'+nameField()+'<label class="check"><input type="checkbox" id="sharelogs" '+(data.sync.shareLogs!==false?'checked':'')+'> 증상과 메모도 함께 공유하기</label></div>';
-    h+='<div class="card"><h3 class="serif">초대 코드와 복구 코드</h3><p class="sub">초대 코드는 연인에게, 복구 코드는 폰을 바꿀 때 나에게 필요해요. 두 코드 모두 기록을 여는 열쇠라서 다른 사람에게 보내면 안 돼요.</p><div class="row"><button class="btn ghost" style="flex:1" data-c="send-invite">초대 코드 보내기</button><button class="btn ghost" style="flex:1" data-c="send-recover">복구 코드 저장</button></div></div>';
+      (partnerHasData()?'<div class="row2" style="margin-top:0"><button class="btn" data-c="viewp">'+esc(pN)+' 달력 보기</button><button class="btn ghost" data-c="sync-now">지금 동기화</button></div>'
+        :(p?'':'<div class="alert info" style="text-align:left"><span class="ic">i</span><span>'+(viewer?'연인의 달력을 불러오는 중이에요.':'아직 연인이 연결되지 않았어요. 아래에서 초대 코드를 보내 주세요.')+'</span></div>')+'<button class="btn ghost full" style="margin-top:4px" data-c="sync-now">지금 동기화</button>')+'</div>';
+    h+='<div class="card"><h3 class="serif">'+(viewer?'내 이름':'공유 설정')+'</h3>'+nameField()+(viewer?'':'<label class="check"><input type="checkbox" id="sharelogs" '+(data.sync.shareLogs!==false?'checked':'')+'> 증상과 메모도 함께 공유하기</label>')+'</div>';
+    if(viewer)h+='<div class="card"><h3 class="serif">복구 코드</h3><p class="sub">폰을 바꿀 때 이 코드로 다시 연결할 수 있어요. 기록을 여는 열쇠라서 다른 사람에게 보내면 안 돼요.</p><button class="btn ghost full" data-c="send-recover">복구 코드 저장</button></div>';
+    else h+='<div class="card"><h3 class="serif">초대 코드와 복구 코드</h3><p class="sub">초대 코드는 연인에게, 복구 코드는 폰을 바꿀 때 나에게 필요해요. 두 코드 모두 기록을 여는 열쇠라서 다른 사람에게 보내면 안 돼요.</p><div class="row"><button class="btn ghost" style="flex:1" data-c="send-invite">초대 코드 보내기</button><button class="btn ghost" style="flex:1" data-c="send-recover">복구 코드 저장</button></div></div>';
     h+='<div class="card"><h3 class="serif">연결 끊기</h3><p class="sub">이 폰의 연결을 끊고 서버에 있는 내 암호화 기록을 지워요. 이 폰에 있는 내 기록은 그대로 남아요.</p><button class="btn danger full" data-c="unpair">연결 끊기</button></div>';
   }
   view.innerHTML=h;
@@ -775,15 +856,15 @@ function charSvg(cx,cy,fill,stroke,deco,side,sleepy){
     '<path d="M'+(cx-6)+','+(cy+3)+' Q'+cx+','+(cy+10)+' '+(cx+6)+','+(cy+3)+'" fill="none" stroke="var(--ink)" stroke-width="2.2" stroke-linecap="round"/>';
   return g;
 }
-function coupleCard(meName,pName){
-  const cut=n=>n.length>8?n.slice(0,8)+'…':n,wait=!pName;
+function coupleCard(lN,rN){
+  const cut=n=>n.length>8?n.slice(0,8)+'…':n,lw=!lN,rw=!rN,wait=lw||rw;
   const heart='<path class="hh" d="M160,86 C142,72 136,60 144,52 C150,46 158,48 160,55 C162,48 170,46 176,52 C184,60 178,72 160,86Z" fill="'+(wait?'none':'var(--period)')+'" stroke="'+(wait?'var(--muted)':'var(--period)')+'" stroke-width="2.5" stroke-dasharray="'+(wait?'4 4':'0')+'"/>';
-  return '<svg viewBox="0 0 320 170" role="img" aria-label="'+esc(meName)+(wait?', 연결 기다리는 중':' 하트 '+esc(pName))+'">'+
+  return '<svg viewBox="0 0 320 170" role="img" aria-label="'+esc(lw?'기다리는 중':lN)+(wait?'':' 하트')+' '+esc(rw?'기다리는 중':rN)+'">'+
     '<path d="M116,86 Q160,'+(wait?'86':'108')+' 204,86" fill="none" stroke="'+(wait?'var(--line)':'var(--period-soft)')+'" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"/>'+heart+
-    '<g class="ch">'+charSvg(68,92,'var(--period-soft)','var(--period)','bow',1,false)+'</g>'+
-    '<g class="ch r">'+charSvg(252,92,wait?'var(--surface2)':'var(--point-soft)',wait?'var(--muted)':'var(--point)','leaf',-1,wait)+'</g>'+
-    '<text x="68" y="158" text-anchor="middle" font-size="15" font-weight="700" fill="var(--ink)">'+esc(cut(meName))+'</text>'+
-    '<text x="252" y="158" text-anchor="middle" font-size="15" font-weight="700" fill="'+(wait?'var(--muted)':'var(--ink)')+'">'+esc(wait?'기다리는 중':cut(pName))+'</text></svg>';
+    '<g class="ch">'+charSvg(68,92,lw?'var(--surface2)':'var(--period-soft)',lw?'var(--muted)':'var(--period)','bow',1,lw)+'</g>'+
+    '<g class="ch r">'+charSvg(252,92,rw?'var(--surface2)':'var(--point-soft)',rw?'var(--muted)':'var(--point)','leaf',-1,rw)+'</g>'+
+    '<text x="68" y="158" text-anchor="middle" font-size="15" font-weight="700" fill="'+(lw?'var(--muted)':'var(--ink)')+'">'+esc(lw?'기다리는 중':cut(lN))+'</text>'+
+    '<text x="252" y="158" text-anchor="middle" font-size="15" font-weight="700" fill="'+(rw?'var(--muted)':'var(--ink)')+'">'+esc(rw?'기다리는 중':cut(rN))+'</text></svg>';
 }
 function renderConnect(){if(SYNC_ON)renderSync();else renderManual()}
 function syncInit(){
@@ -823,6 +904,7 @@ function renderSettings(){
     '<div class="swatches" style="margin-bottom:2px">'+THEMES.map(t=>'<button class="sw" data-theme-pick="'+t[0]+'" aria-pressed="'+(th===t[0])+'"><span class="dot" style="background:'+t[2]+'"><i style="background:linear-gradient(90deg,'+t[3]+' 50%,'+t[4]+' 50%)"></i></span>'+t[1]+'</button>').join('')+'</div></div>';
   const inst=isStandalone()?'':'<div class="card"><h3>앱으로 설치</h3><p class="sub">설치하면 주소창과 브라우저 메뉴 없이 앱처럼 열려요. 아이콘 색은 설치할 때 고른 테마를 따라가요.</p>'+
     (installEvt?'<button class="btn full" data-c="install">앱 설치하기</button>':'<p class="sub" style="margin:0">브라우저 메뉴(⋮ 또는 ≡)에서 <b>앱 설치</b> 또는 <b>홈 화면에 추가 → 설치</b>를 골라 주세요. 이미 바로가기로 추가한 아이콘이 있다면 먼저 지우고 다시 설치해야 주소창 없이 열려요.</p>')+'</div>';
+  setTimeout(()=>{if(isViewer())view.querySelectorAll('.card').forEach(c=>{const t=c.querySelector('h3');if(t&&(t.textContent==='기본값'||t.textContent==='백업과 복원'))c.remove()})});
   view.innerHTML=inst+look+'<div class="card"><h3 class="serif">기본값</h3><p class="sub">기록이 2번 미만일 때 예측에 쓰여요. 기록이 쌓이면 실제 평균으로 바뀌어요.</p>'+
     '<div class="row"><div class="field" style="flex:1"><label class="f" for="cl">주기 길이(일)</label><input type="number" id="cl" min="15" max="60" inputmode="numeric" value="'+data.settings.cycleLen+'"></div>'+
     '<div class="field" style="flex:1"><label class="f" for="pl">생리 기간(일)</label><input type="number" id="pl" min="1" max="14" inputmode="numeric" value="'+data.settings.periodLen+'"></div></div>'+
@@ -839,18 +921,19 @@ view.addEventListener('change',e=>{if(e.target.id==='sharelogs'&&data.sync){data
 view.addEventListener('input',e=>{if(e.target.id==='myname'){data.settings.name=e.target.value.slice(0,20);save();renderWho()}});
 view.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
-  if(b.dataset.date){const d=b.dataset.date;selDate=d;if(tab!=='cal'){const x=parse(d);cursor=new Date(x.getFullYear(),x.getMonth(),1);goTab('cal')}else render();return}
+  if(b.dataset.date){const d=b.dataset.date;selDate=d;if(swallowClick){swallowClick=false;return}if(tab!=='cal'){const x=parse(d);cursor=new Date(x.getFullYear(),x.getMonth(),1);goTab('cal')}else updateSel();return}
   if(b.dataset.q){
     if(b.dataset.q==='start'){startAt(TODAY);toast('오늘부터 생리로 기록했어요')}
     if(b.dataset.q==='end'){endAt(TODAY);toast('오늘 생리가 끝난 것으로 기록했어요')}
     if(b.dataset.q==='log'){openSheet(TODAY);return}
-    if(b.dataset.q==='edit'){openSheet(selDate);return}
+    if(b.dataset.q==='edit'||b.dataset.q==='peek'){openSheet(selDate);return}
+    if(b.dataset.q==='hist'){openSheet('history');return}
     if(b.dataset.q==='tocal'){selDate=TODAY;const x=new Date();cursor=new Date(x.getFullYear(),x.getMonth(),1);goTab('cal');return}
     render();return;
   }
   if(b.dataset.mode){data.settings.mode=b.dataset.mode;saveLocal();applyTheme();render();return}
   if(b.dataset.themePick){data.settings.theme=b.dataset.themePick;saveLocal();applyTheme();render();return}
-  if(b.dataset.nav!==undefined){const n=+b.dataset.nav;if(n===0){const d=new Date();cursor=new Date(d.getFullYear(),d.getMonth(),1)}else cursor=new Date(cursor.getFullYear(),cursor.getMonth()+n,1);render();return}
+  if(b.dataset.nav!==undefined){const n=+b.dataset.nav;if(n===0){selDate=TODAY;updateSel();scrollToDate(TODAY,true,1)}else{const t=new Date(cursor.getFullYear(),cursor.getMonth()+n,1);scrollToDate(ymd(t),true,0)}return}
   const c=b.dataset.c;if(!c)return;
   if(c==='install'){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;render()})}return}
   if(c==='pair-new'){
