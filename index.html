@@ -176,8 +176,10 @@ header.top h1{margin:0;font-size:24px;font-weight:800;flex:1;letter-spacing:-.03
 .cscroll::-webkit-scrollbar{display:none}
 .cscroll .wrow:first-child{border-top:0}
 .day{position:relative}
-.day.mb{box-shadow:inset 0 2px 0 var(--muted)}
-.day .ml{position:absolute;top:1px;left:50%;transform:translateX(-50%);font-size:10.5px;font-weight:800;line-height:1;color:var(--period-soft-ink);white-space:nowrap}
+.day .num{transition:color .25s,opacity .25s}
+.day.dim .num{color:var(--muted);opacity:.5}
+.day.today.dim .num{color:var(--btn-ink);opacity:.55}
+.day .ml{position:absolute;top:1px;left:50%;transform:translateX(-50%);font-size:10px;font-weight:700;line-height:1;color:var(--muted);white-space:nowrap}
 .daypanel{margin-top:12px}
 /* cycle history */
 .htab{margin:0 -20px}
@@ -228,6 +230,18 @@ ol.how li{margin-bottom:6px}
 @keyframes beat{0%,60%,100%{transform:scale(1)}15%{transform:scale(1.2)}30%{transform:scale(1)}45%{transform:scale(1.12)}}
 @media (prefers-reduced-motion:reduce){.couple .ch,.couple .hh{animation:none}}
 .cstat{margin:6px 0 16px;font-size:13.5px;color:var(--muted)}
+
+/* update notice */
+.wn{position:fixed;inset:0;z-index:50;background:rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;padding:24px}
+.wnbox{background:var(--surface);border-radius:22px;padding:24px 22px 20px;max-width:360px;width:100%}
+.wnbox b{display:block;font-size:20px;font-weight:800}
+.wnv{display:block;font-size:13px;color:var(--muted);margin-top:2px}
+.wnbox ul{margin:14px 0 18px;padding-left:18px;font-size:15px}
+.wnbox li{margin-bottom:6px}
+.upbar{position:fixed;left:12px;right:12px;top:calc(env(safe-area-inset-top,0px) + var(--hh,58px) + 4px);z-index:25;max-width:496px;margin:0 auto;background:var(--btn);color:var(--btn-ink);border-radius:14px;padding:10px 10px 10px 16px;display:flex;align-items:center;gap:8px;box-shadow:0 6px 20px rgba(0,0,0,.18);font-size:14.5px;font-weight:600}
+.upbar span{flex:1}
+.upbar button{border:0;border-radius:10px;padding:8px 12px;background:var(--period);color:#fff;font-weight:700;font-size:14px}
+.upbar .upx{background:transparent;color:var(--btn-ink);padding:6px 8px;font-size:18px;opacity:.7}
 
 /* appearance settings */
 .modeseg{display:grid;grid-template-columns:repeat(3,1fr);background:var(--surface2);border-radius:12px;padding:3px;margin-bottom:18px}
@@ -296,7 +310,8 @@ nav.tabs button[aria-current="page"]{color:var(--ink);font-weight:700;opacity:1}
 <script>
 (function(){
 const KEY='dul-cycle:v1';
-const APP_VERSION='2026.11.18-6';
+const APP_VERSION='2026.11.18-8';
+const CHANGES=['새 버전이 나오면 이렇게 알려 드려요','설정에서 생리 예정 7일 전·3일 전 알림을 켤 수 있어요'];
 const FLOW=['없음','적음','보통','많음'];
 const PAIN=['없음','약함','보통','심함'];
 const MOODS=['좋음','평온','예민','우울','불안','피곤'];
@@ -325,7 +340,7 @@ function load(){
 }
 let data=load();
 function saveLocal(){try{localStorage.setItem(KEY,JSON.stringify(data))}catch(e){toast('저장하지 못했어요. 브라우저의 저장 공간 설정을 확인해 주세요.')}}
-function save(){if(data.sync)data.sync.dirty=true;saveLocal();schedulePush()}
+function save(){if(data.sync)data.sync.dirty=true;saveLocal();schedulePush();scheduleReminders()}
 
 function goTab(t){
   if(t!==tab){
@@ -528,7 +543,7 @@ function panelHtml(p,a){
     (sd<=TODAY?recList(p.logs[sd],p.readonly?'이 날 공유된 기록이 없어요':'이 날 남긴 기록이 없어요'):'<p class="empty">아직 오지 않은 날이에요. 표시된 기간은 예측이에요.</p>');
 }
 const monthLabel=()=>cursor.getFullYear()+'년 '+(cursor.getMonth()+1)+'월';
-let calTop=null,swallowClick=false,calTick=false;
+let calTop=null,swallowClick=false,calTick=false,dimKey=null;
 // one continuous calendar: every week from the first record (max 3 years back) to a year ahead
 function renderCal(){
   const p=profile(),a=analyze(p),t0=parse(TODAY);
@@ -542,7 +557,6 @@ function renderCal(){
     const ds=[];for(let i=0;i<7;i++)ds.push(addDays(ws,i));
     let days='',bars='';
     ds.forEach(s=>{const d=parse(s),c=['day'];if(s===TODAY)c.push('today');if(s===selDate)c.push('sel');
-      if(parse(addDays(s,-7)).getMonth()!==d.getMonth())c.push('mb');
       days+='<button class="'+c.join(' ')+'" data-date="'+s+'" aria-label="'+md(s)+'">'+(d.getDate()===1?'<span class="ml">'+(d.getMonth()+1)+'월</span>':'')+'<span class="num">'+d.getDate()+'</span><span class="marks">'+marks(p.logs[s])+'</span></button>'});
     for(let i=0;i<7;){
       const t=bandType(a.map[ds[i]]||'');if(!t){i++;continue}
@@ -559,7 +573,7 @@ function renderCal(){
     '<div class="cal"><div class="wkh">'+WD.map(w=>'<span>'+w+'</span>').join('')+'</div><div class="cscroll" id="cs">'+rows+'</div></div>'+
     '<div class="card daypanel" id="dpanel">'+panelHtml(p,a)+'</div>'+
     '<p class="note">배란일과 가임기는 평균 주기로 계산한 추정치라 피임 수단으로 쓰기에는 정확하지 않아요.</p>';
-  const cs=$('#cs');
+  const cs=$('#cs');dimKey=null;
   if(lastRendered==='cal'&&calTop!==null)cs.scrollTop=calTop;else scrollToDate(selDate,false,1);
   syncCalLabel();
   cs.addEventListener('scroll',()=>{calTop=cs.scrollTop;if(calTick)return;calTick=true;requestAnimationFrame(()=>{calTick=false;syncCalLabel()})},{passive:true});
@@ -579,6 +593,9 @@ function syncCalLabel(){
   if(!row)return;
   const mid=parse(addDays(row.dataset.wk,3));cursor=new Date(mid.getFullYear(),mid.getMonth(),1);
   const l=$('#calLabel');if(l)l.textContent=monthLabel();
+  // dim the days of the neighbouring months so the month in view stands out
+  const key=ymKey(cursor);
+  if(key!==dimKey){dimKey=key;cs.querySelectorAll('.day').forEach(el=>el.classList.toggle('dim',el.dataset.date.slice(0,7)!==key))}
 }
 function updateSel(){
   view.querySelectorAll('.day.sel').forEach(e=>e.classList.remove('sel'));
@@ -797,7 +814,7 @@ async function pull(){
   try{await ensureKeys();const o=await getSlot(keys.theirs);
     if(o){const before=data.partner&&data.partner.at;
       data.partner={name:typeof o.name==='string'?o.name.slice(0,20):'연인',days:cleanDays(o.days),logs:cleanLogs(o.logs),settings:cleanSettings(o.settings),at:typeof o.at==='number'?o.at:Date.now()};
-      saveLocal();if(!userPicked&&viewing!=='partner'&&preferPartner()){viewing='partner';if(!sheetDate&&!typing())render()}else if(before!==data.partner.at&&!sheetDate&&!typing())render();}
+      saveLocal();scheduleReminders();if(!userPicked&&viewing!=='partner'&&preferPartner()){viewing='partner';if(!sheetDate&&!typing())render()}else if(before!==data.partner.at&&!sheetDate&&!typing())render();}
     setStatus('ok');
   }catch(e){setStatus('error')}
 }
@@ -876,6 +893,97 @@ function syncInit(){
   window.addEventListener('online',tick);
 }
 
+
+// ---------- period reminders (7 / 3 days before) ----------
+// The schedule is written where the service worker can read it; the worker shows each
+// reminder when it wakes up (periodic background sync on installed apps, or app launch).
+const remindCfg=()=>Object.assign({on:false,d7:true,d3:true},data.settings.remind||{});
+let remindT=null,remindStatus={periodic:false};
+const swReady=()=>('serviceWorker' in navigator&&location.protocol==='https:')?Promise.race([navigator.serviceWorker.ready,new Promise(r=>setTimeout(()=>r(null),3000))]):Promise.resolve(null);
+function remindTarget(){
+  if(isViewer())return partnerHasData()?{days:data.partner.days,logs:{},settings:data.partner.settings||{},name:data.partner.name||'연인',other:true}:null;
+  return data.days.length?{days:data.days,logs:{},settings:data.settings,name:'',other:false}:null;
+}
+function buildReminders(){
+  const cfg=remindCfg(),t=remindTarget(),list=[];
+  if(!cfg.on||!t)return list;
+  const a=analyze(t);if(!a.last)return list;
+  a.predStarts.filter(x=>x>TODAY).slice(0,3).forEach(st=>{
+    [[7,cfg.d7],[3,cfg.d3]].forEach(([n,on])=>{
+      if(!on)return;const d=parse(addDays(st,-n));d.setHours(9,0,0,0);
+      if(d.getTime()<Date.now()-864e5)return;
+      list.push({id:'r'+st+'-'+n,at:d.getTime(),
+        title:t.other?t.name+'님 생리 예정 '+n+'일 전':'생리 예정 '+n+'일 전',
+        body:md(st)+'쯤 생리가 시작될 예정이에요.'+(t.other?' 컨디션을 챙겨 주세요.':' 미리 준비해 두세요.')});
+    });
+  });
+  return list;
+}
+function scheduleReminders(){clearTimeout(remindT);remindT=setTimeout(writeReminders,800)}
+async function writeReminders(){
+  try{
+    if(!('caches' in window))return;
+    const c=await caches.open('dul-meta');
+    await c.put('./__reminders',new Response(JSON.stringify({list:buildReminders()}),{headers:{'Content-Type':'application/json'}}));
+    const reg=await swReady();if(reg&&reg.active)reg.active.postMessage('check-reminders');
+  }catch(e){}
+}
+async function refreshRemindStatus(){
+  const reg=await swReady();let periodic=false;
+  try{if(reg&&reg.periodicSync)periodic=(await reg.periodicSync.getTags()).includes('dul-reminders')}catch(e){}
+  if(periodic!==remindStatus.periodic){remindStatus.periodic=periodic;if(tab==='settings')render()}
+}
+async function enableReminders(){
+  if(!('Notification' in window)){toast('이 브라우저는 알림을 지원하지 않아요');return}
+  const perm=await Notification.requestPermission();
+  if(perm!=='granted'){toast('알림이 허용되지 않았어요');render();return}
+  data.settings.remind=Object.assign(remindCfg(),{on:true});saveLocal();
+  const reg=await swReady();
+  if(reg&&reg.periodicSync){try{const st=await navigator.permissions.query({name:'periodic-background-sync'});if(st.state==='granted')await reg.periodicSync.register('dul-reminders',{minInterval:6*3600e3})}catch(e){}}
+  if(reg)reg.showNotification('알림이 켜졌어요',{body:'생리 예정일 전에 알려 드릴게요.',icon:'icon-192.png',tag:'dul-on'});
+  await writeReminders();await refreshRemindStatus();render();
+}
+async function disableReminders(){
+  data.settings.remind=Object.assign(remindCfg(),{on:false});saveLocal();
+  const reg=await swReady();try{if(reg&&reg.periodicSync)await reg.periodicSync.unregister('dul-reminders')}catch(e){}
+  await writeReminders();remindStatus.periodic=false;render();
+}
+function remindCard(){
+  const cfg=remindCfg(),sup='Notification' in window,perm=sup?Notification.permission:'denied';
+  const who=isViewer()?'연인의 ':'';
+  let h='<div class="card"><h3>생리 예정 알림</h3><p class="sub">'+who+'생리 예정일 7일 전과 3일 전 오전 9시에 알려 드려요</p>';
+  if(!sup)return h+'<p class="sub" style="margin:0">이 브라우저는 알림을 지원하지 않아요.</p></div>';
+  if(perm==='denied')return h+'<p class="sub" style="margin:0">알림이 차단돼 있어요. 휴대폰 설정 → 애플리케이션 → '+(isStandalone()?'둘의 달력':'사용 중인 브라우저')+' → 알림에서 허용한 뒤 다시 열어 주세요.</p></div>';
+  if(!cfg.on||perm!=='granted')return h+'<button class="btn full" data-c="noti-on">알림 켜기</button></div>';
+  h+='<label class="check"><input type="checkbox" id="rm7" '+(cfg.d7?'checked':'')+'> 7일 전</label><label class="check"><input type="checkbox" id="rm3" '+(cfg.d3?'checked':'')+'> 3일 전</label>';
+  h+='<p class="sub">'+(remindStatus.periodic?'앱을 열지 않아도 휴대폰이 하루 몇 번 확인해서 알려 드려요. 배터리 절약 모드에서는 늦어질 수 있어요.':'지금은 앱을 열 때 알려 드려요. 홈 화면에 설치한 앱에서 알림을 켜면 앱을 열지 않아도 알려 드릴 수 있어요.')+'</p>';
+  return h+'<button class="btn ghost full" data-c="noti-off">알림 끄기</button></div>';
+}
+
+// ---------- update notice ----------
+let newVerShown=null;
+function showWhatsNew(){
+  const w=document.createElement('div');w.className='wn';
+  w.innerHTML='<div class="wnbox" role="dialog" aria-modal="true" aria-label="업데이트 안내"><b>업데이트됐어요</b><span class="wnv">버전 '+APP_VERSION+'</span><ul>'+CHANGES.map(c=>'<li>'+esc(c)+'</li>').join('')+'</ul><button class="btn full">확인</button></div>';
+  w.addEventListener('click',e=>{if(e.target===w||e.target.tagName==='BUTTON')w.remove()});
+  document.body.appendChild(w);
+}
+function checkWhatsNew(){
+  try{const k='dul-seen-version',seen=localStorage.getItem(k);if(seen&&seen!==APP_VERSION)setTimeout(showWhatsNew,400);localStorage.setItem(k,APP_VERSION)}catch(e){}
+}
+async function checkForUpdate(){
+  try{
+    const r=await fetch('./index.html',{cache:'no-store'});if(!r.ok)return;
+    const m=(await r.text()).match(/APP_VERSION='([^']+)'/);
+    if(!m||m[1]===APP_VERSION||newVerShown===m[1])return;
+    newVerShown=m[1];
+    const b=document.createElement('div');b.className='upbar';
+    b.innerHTML='<span>새 버전이 나왔어요</span><button>업데이트</button><button class="upx" aria-label="닫기">×</button>';
+    b.addEventListener('click',e=>{if(e.target.classList.contains('upx'))b.remove();else if(e.target.tagName==='BUTTON')location.reload()});
+    document.body.appendChild(b);
+  }catch(e){}
+}
+
 // ---------- connect tab ----------
 let lastShare='';
 function renderManual(){
@@ -905,7 +1013,7 @@ function renderSettings(){
   const inst=isStandalone()?'':'<div class="card"><h3>앱으로 설치</h3><p class="sub">설치하면 주소창과 브라우저 메뉴 없이 앱처럼 열려요. 아이콘 색은 설치할 때 고른 테마를 따라가요.</p>'+
     (installEvt?'<button class="btn full" data-c="install">앱 설치하기</button>':'<p class="sub" style="margin:0">브라우저 메뉴(⋮ 또는 ≡)에서 <b>앱 설치</b> 또는 <b>홈 화면에 추가 → 설치</b>를 골라 주세요. 이미 바로가기로 추가한 아이콘이 있다면 먼저 지우고 다시 설치해야 주소창 없이 열려요.</p>')+'</div>';
   setTimeout(()=>{if(isViewer())view.querySelectorAll('.card').forEach(c=>{const t=c.querySelector('h3');if(t&&(t.textContent==='기본값'||t.textContent==='백업과 복원'))c.remove()})});
-  view.innerHTML=inst+look+'<div class="card"><h3 class="serif">기본값</h3><p class="sub">기록이 2번 미만일 때 예측에 쓰여요. 기록이 쌓이면 실제 평균으로 바뀌어요.</p>'+
+  view.innerHTML=inst+look+remindCard()+'<div class="card"><h3 class="serif">기본값</h3><p class="sub">기록이 2번 미만일 때 예측에 쓰여요. 기록이 쌓이면 실제 평균으로 바뀌어요.</p>'+
     '<div class="row"><div class="field" style="flex:1"><label class="f" for="cl">주기 길이(일)</label><input type="number" id="cl" min="15" max="60" inputmode="numeric" value="'+data.settings.cycleLen+'"></div>'+
     '<div class="field" style="flex:1"><label class="f" for="pl">생리 기간(일)</label><input type="number" id="pl" min="1" max="14" inputmode="numeric" value="'+data.settings.periodLen+'"></div></div>'+
     '<button class="btn full" data-c="saveset">저장</button></div>'+
@@ -917,7 +1025,7 @@ function renderSettings(){
 }
 
 // ---------- events ----------
-view.addEventListener('change',e=>{if(e.target.id==='sharelogs'&&data.sync){data.sync.shareLogs=e.target.checked;save();toast(e.target.checked?'증상과 메모도 공유해요':'생리 날짜만 공유해요')}});
+view.addEventListener('change',e=>{if(e.target.id==='rm7'||e.target.id==='rm3'){data.settings.remind=Object.assign(remindCfg(),{[e.target.id==='rm7'?'d7':'d3']:e.target.checked});saveLocal();writeReminders();return}if(e.target.id==='sharelogs'&&data.sync){data.sync.shareLogs=e.target.checked;save();toast(e.target.checked?'증상과 메모도 공유해요':'생리 날짜만 공유해요')}});
 view.addEventListener('input',e=>{if(e.target.id==='myname'){data.settings.name=e.target.value.slice(0,20);save();renderWho()}});
 view.addEventListener('click',e=>{
   const b=e.target.closest('button');if(!b)return;
@@ -935,6 +1043,8 @@ view.addEventListener('click',e=>{
   if(b.dataset.themePick){data.settings.theme=b.dataset.themePick;saveLocal();applyTheme();render();return}
   if(b.dataset.nav!==undefined){const n=+b.dataset.nav;if(n===0){selDate=TODAY;updateSel();scrollToDate(TODAY,true,1)}else{const t=new Date(cursor.getFullYear(),cursor.getMonth()+n,1);scrollToDate(ymd(t),true,0)}return}
   const c=b.dataset.c;if(!c)return;
+  if(c==='noti-on'){enableReminders();return}
+  if(c==='noti-off'){disableReminders();return}
   if(c==='install'){if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;render()})}return}
   if(c==='pair-new'){
     if(!data.settings.name){toast('먼저 상대에게 보일 이름을 적어 주세요');$('#myname').focus();return}
@@ -1006,6 +1116,10 @@ window.addEventListener('popstate',e=>{
   sh.addEventListener('touchend',()=>{if(y0===null)return;sh.style.transition='';if(dy>90)closeSheet();else sh.style.transform='';y0=null;dy=0});
 })();
 applyTheme();
+checkWhatsNew();
+setTimeout(()=>{writeReminders();refreshRemindStatus();checkForUpdate()},1500);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'){writeReminders();checkForUpdate()}});
+setInterval(()=>{if(document.visibilityState==='visible')checkForUpdate()},30*60e3);
 if(window.matchMedia)matchMedia('(prefers-color-scheme: dark)').addEventListener('change',applyTheme);
 render();
 syncInit();
