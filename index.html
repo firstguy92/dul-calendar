@@ -278,6 +278,7 @@ nav.tabs button[aria-current="page"]{color:var(--ink);font-weight:700;opacity:1}
 <script>
 (function(){
 const KEY='dul-cycle:v1';
+const APP_VERSION='2026.11.18-3';
 const FLOW=['없음','적음','보통','많음'];
 const PAIN=['없음','약함','보통','심함'];
 const MOODS=['좋음','평온','예민','우울','불안','피곤'];
@@ -743,7 +744,7 @@ function nameField(){return '<div class="field"><label class="f" for="myname">�
 function renderSync(){
   let h='';
   if(!data.sync){
-    h+='<div class="card"><h3 class="serif">연인과 자동 동기화</h3><p class="sub">기록은 이 폰에서 암호화된 뒤 서버에 올라가요. 서버에는 두 사람만 열 수 있는 암호문만 남아요.</p>'+nameField()+
+    h+='<div class="card couple">'+coupleCard(data.settings.name||'나',null)+'<p class="cstat">아직 연결 전이에요</p></div><div class="card"><h3 class="serif">연인과 자동 동기화</h3><p class="sub">기록은 이 폰에서 암호화된 뒤 서버에 올라가요. 서버에는 두 사람만 열 수 있는 암호문만 남아요.</p>'+nameField()+
       '<button class="btn full" data-c="pair-new">새로 연결 시작하기</button></div>'+
       '<div class="card"><h3 class="serif">받은 코드로 연결하기</h3><p class="sub">연인에게 받은 초대 코드나, 폰을 바꿀 때 보관해 둔 내 복구 코드를 붙여넣어 주세요.</p><textarea id="paircode" placeholder="코드를 붙여넣어 주세요"></textarea><button class="btn full" style="margin-top:8px" data-c="pair-join">연결하기</button></div>';
   }else{
@@ -829,7 +830,8 @@ function renderSettings(){
     '<div class="card"><h3 class="serif">백업과 복원</h3><p class="sub">'+(SYNC_ON&&data.sync?'자동 동기화 중이라 서버에 암호화된 사본이 있어요. 폰을 바꾸면 연결 탭의 복구 코드로 되살릴 수 있어요. 백업 코드는 추가 보관용이에요.':'기록은 이 휴대폰에만 저장돼요. 브라우저 데이터를 지우거나 휴대폰을 바꾸면 사라지니 가끔 백업 코드를 나에게 보내 두세요.')+'</p>'+
     '<button class="btn ghost full" data-c="backup">백업 코드 만들기</button>'+
     '<textarea id="rcode" style="margin-top:12px" placeholder="백업 코드를 붙여넣어 복원"></textarea><button class="btn ghost full" style="margin-top:8px" data-c="restore">복원하기</button></div>'+
-    '<div class="card"><h3 class="serif">데이터 지우기</h3><p class="sub">이 휴대폰에 저장된 내 기록과 연인 정보를 모두 지워요.</p><button class="btn danger full" data-c="wipe">모두 지우기</button></div>';
+    '<div class="card"><h3 class="serif">데이터 지우기</h3><p class="sub">이 휴대폰에 저장된 내 기록과 연인 정보를 모두 지워요.</p><button class="btn danger full" data-c="wipe">모두 지우기</button></div>'+
+    '<p class="note" style="text-align:center">버전 '+APP_VERSION+'</p>';
 }
 
 // ---------- events ----------
